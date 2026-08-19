@@ -1,0 +1,18 @@
+const express = require('express');
+const cors = require('cors');
+
+const teacherRoutes = require('../backend/routes/teacherRoutes');
+const studentRoutes = require('../backend/routes/studentRoutes');
+
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+
+// API Route Mounts
+app.use('/api/lecturer', teacherRoutes);
+app.use('/api/student', studentRoutes);
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Server listening on http://localhost:${PORT}`));
+
