@@ -4,10 +4,12 @@ export default function StudentPanel() {
   const [inputStudentCode, setInputStudentCode] = useState('');
   const [inputSessionCode, setInputSessionCode] = useState('');
   const [submitFeedback, setSubmitFeedback] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmitAttendance = async (e) => {
     e.preventDefault();
     setSubmitFeedback(null);
+    setIsSubmitting(true);
     try {
       const res = await fetch('http://localhost:3000/api/student/submit-attendance', {
         method: 'POST',
@@ -18,6 +20,8 @@ export default function StudentPanel() {
       setSubmitFeedback(data);
     } catch (err) {
       setSubmitFeedback({ success: false, message: 'Server connection error.' });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -42,8 +46,8 @@ export default function StudentPanel() {
             style={{ padding: '10px', fontSize: '15px' }}
             required 
           />
-          <button type="submit" style={{ padding: '12px', backgroundColor: '#0056b3', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer' }}>
-            Submit Attendance
+          <button type="submit" disabled={isSubmitting} style={{ padding: '12px', backgroundColor: '#0056b3', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '16px', fontWeight: 'bold', cursor: isSubmitting ? 'wait' : 'pointer' }}>
+            {isSubmitting ? 'Submitting...' : 'Submit Attendance'}
           </button>
         </form>
 

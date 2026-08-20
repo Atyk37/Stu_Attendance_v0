@@ -35,12 +35,33 @@ exports.submitAttendance = async (req, res) => {
     const enrollmentId = enrollments[0].enrollment_id;
     const today = new Date().toISOString().split('T')[0];
 
-    await db.query(
-      `INSERT INTO Attendance (enrollment_id, attendance_date, status)
-       VALUES (?, ?, 'PRESENT')
-       ON DUPLICATE KEY UPDATE status = 'PRESENT'`,
-      [enrollmentId, today]
-    );
+    const connection = await db.getConnection();
+    try {
+      await connection.beginTransaction();
+      await connection.query('SELECT enrollment_id FROM Enrollments WHERE enrollment_id = ? FOR UPDATE', [enrollmentId]);
+
+      const [existingAttendance] = await connection.query(
+        'SELECT attendance_id FROM Attendance WHERE enrollment_id = ? AND attendance_date = ? LIMIT 1',
+        [enrollmentId, today]
+      );
+
+      if (existingAttendance.length > 0) {
+        await connection.rollback();
+        return res.status(409).json({ success: false, message: 'Attendance has already been recorded for today.' });
+      }
+
+      await connection.query(
+        `INSERT INTO Attendance (enrollment_id, attendance_date, status)
+         VALUES (?, ?, 'PRESENT')`,
+        [enrollmentId, today]
+      );
+      await connection.commit();
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
 
     res.json({ success: true, message: 'Attendance recorded: PRESENT' });
   } catch (err) {

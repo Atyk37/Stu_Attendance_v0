@@ -8,6 +8,8 @@ export default function LecturerPanel({ teacher }) {
   const [courseForm, setCourseForm] = useState({ course_code: '', course_name: '', is_elective: false, room_number: 'L 202', academic_year: '2025-2026', semester: 'Semester VIII' });
   const [courseFeedback, setCourseFeedback] = useState(null);
   const [deletingClassId, setDeletingClassId] = useState(null);
+  const [sessionFeedback, setSessionFeedback] = useState(null);
+  const [sessionLoading, setSessionLoading] = useState(false);
   const [searchHistoryCode, setSearchHistoryCode] = useState('');
   const [attendanceHistory, setAttendanceHistory] = useState([]);
 
@@ -50,6 +52,8 @@ export default function LecturerPanel({ teacher }) {
 
   const handleStartSession = async () => {
     if (!selectedClassId) return alert('Select a course first.');
+    setSessionLoading(true);
+    setSessionFeedback(null);
     try {
       const res = await fetch('http://localhost:3000/api/lecturer/start-session', {
         method: 'POST',
@@ -57,9 +61,12 @@ export default function LecturerPanel({ teacher }) {
         body: JSON.stringify({ class_id: selectedClassId, teacher_id: teacher.teacher_id, duration_minutes: 10 })
       });
       const data = await res.json();
-      if (data.success) setActiveSession(data);
-    } catch (err) {
-      console.error(err);
+      if (!res.ok || !data.success) throw new Error(data.error || data.message || 'Unable to open attendance code.');
+      setActiveSession(data);
+    } catch (error) {
+      setSessionFeedback({ success: false, message: error.message });
+    } finally {
+      setSessionLoading(false);
     }
   };
 
@@ -83,15 +90,21 @@ export default function LecturerPanel({ teacher }) {
 
   const handleCloseSession = async () => {
     if (!activeSession) return;
+    setSessionLoading(true);
+    setSessionFeedback(null);
     try {
-      await fetch('http://localhost:3000/api/lecturer/close-session', {
+      const response = await fetch('http://localhost:3000/api/lecturer/close-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ session_id: activeSession.session_id, teacher_id: teacher.teacher_id })
       });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || data.message || 'Unable to end attendance session.');
       setActiveSession(null);
-    } catch (err) {
-      console.error(err);
+    } catch (error) {
+      setSessionFeedback({ success: false, message: error.message });
+    } finally {
+      setSessionLoading(false);
     }
   };
 
@@ -141,7 +154,11 @@ export default function LecturerPanel({ teacher }) {
       <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
         <select 
           value={selectedClassId} 
-          onChange={(e) => setSelectedClassId(e.target.value)}
+          onChange={(e) => {
+            setSelectedClassId(e.target.value);
+            setActiveSession(null);
+            setSessionFeedback(null);
+          }}
           style={{ padding: '10px', flex: 1, fontSize: '15px' }}
         >
           <option value="">-- Select Course --</option>
@@ -153,17 +170,17 @@ export default function LecturerPanel({ teacher }) {
         </select>
         
         {!activeSession ? (
-          <button onClick={handleStartSession} style={{ padding: '10px 20px', backgroundColor: '#28a745', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
-            Open Attendance Code
+          <button onClick={handleStartSession} disabled={sessionLoading} style={{ padding: '10px 20px', backgroundColor: '#28a745', color: '#fff', border: 'none', borderRadius: '4px', cursor: sessionLoading ? 'wait' : 'pointer', fontWeight: 'bold' }}>
+            {sessionLoading ? 'Generating Code...' : 'Open Attendance Code'}
           </button>
         ) : (
-          <button onClick={handleCloseSession} style={{ padding: '10px 20px', backgroundColor: '#dc3545', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
-            End Session
+          <button onClick={handleCloseSession} disabled={sessionLoading} style={{ padding: '10px 20px', backgroundColor: '#dc3545', color: '#fff', border: 'none', borderRadius: '4px', cursor: sessionLoading ? 'wait' : 'pointer', fontWeight: 'bold' }}>
+            {sessionLoading ? 'Ending Session...' : 'End Session'}
           </button>
         )}
       </div>
 
-      <StudentEnrollmentManager teacher={teacher} selectedClassId={selectedClassId} />
+      {sessionFeedback && <p style={{ color: '#dc3545', fontWeight: 'bold' }}>{sessionFeedback.message}</p>}
 
       {activeSession && (
         <div style={{ textAlign: 'center', backgroundColor: '#e3f2fd', padding: '20px', borderRadius: '8px', border: '2px dashed #0056b3' }}>
@@ -172,6 +189,8 @@ export default function LecturerPanel({ teacher }) {
           <p style={{ margin: 0, color: '#555' }}>Provide this code to class members to mark PRESENT.</p>
         </div>
       )}
+
+      <StudentEnrollmentManager teacher={teacher} selectedClassId={selectedClassId} />
 
       <div style={{ marginTop: '30px', padding: '20px', backgroundColor: '#fff', borderRadius: '6px', border: '1px solid #ddd' }}>
         <h3>Search Attendance Records</h3>
