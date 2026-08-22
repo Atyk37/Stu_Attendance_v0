@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 
 export default function StudentPanel() {
   const [inputStudentCode, setInputStudentCode] = useState('');
+  const [inputCourseName, setInputCourseName] = useState('');
   const [inputSessionCode, setInputSessionCode] = useState('');
   const [submitFeedback, setSubmitFeedback] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -14,7 +15,7 @@ export default function StudentPanel() {
       const res = await fetch('http://localhost:3000/api/student/submit-attendance', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ student_code: inputStudentCode, session_code: inputSessionCode })
+        body: JSON.stringify({ student_code: inputStudentCode, course_name: inputCourseName, session_code: inputSessionCode })
       });
       const data = await res.json();
       setSubmitFeedback(data);
@@ -37,6 +38,14 @@ export default function StudentPanel() {
             onChange={(e) => setInputStudentCode(e.target.value)}
             style={{ padding: '10px', fontSize: '15px' }}
             required 
+          />
+          <input
+            type="text"
+            placeholder="Course name (e.g., Advanced Database System)"
+            value={inputCourseName}
+            onChange={(e) => setInputCourseName(e.target.value)}
+            style={{ padding: '10px', fontSize: '15px' }}
+            required
           />
           <input 
             type="text" 

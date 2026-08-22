@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import StudentEnrollmentManager from './StudentEnrollmentManager';
+import MonthlyAttendance from './MonthlyAttendance';
 
 export default function LecturerPanel({ teacher }) {
   const [classList, setClassList] = useState([]);
@@ -191,6 +192,7 @@ export default function LecturerPanel({ teacher }) {
       )}
 
       <StudentEnrollmentManager teacher={teacher} selectedClassId={selectedClassId} />
+      <MonthlyAttendance teacher={teacher} selectedClassId={selectedClassId} />
 
       <div style={{ marginTop: '30px', padding: '20px', backgroundColor: '#fff', borderRadius: '6px', border: '1px solid #ddd' }}>
         <h3>Search Attendance Records</h3>

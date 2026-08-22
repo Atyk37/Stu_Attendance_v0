@@ -2,14 +2,22 @@ const db = require('../config/db');
 
 // Submit live attendance code
 exports.submitAttendance = async (req, res) => {
-  const { student_code, session_code } = req.body;
+  const { student_code, course_name, session_code } = req.body;
 
   try {
     const cleanStudentCode = student_code.trim().toUpperCase();
+    const cleanCourseName = course_name?.trim().toLowerCase();
     const cleanSessionCode = session_code.trim();
 
+    if (!cleanCourseName) {
+      return res.status(400).json({ success: false, message: 'Course name is required.' });
+    }
+
     const [sessions] = await db.query(
-      `SELECT session_id, class_id FROM AttendanceSessions 
+      `SELECT sessions.session_id, sessions.class_id, courses.course_name
+       FROM AttendanceSessions sessions
+       JOIN Classes classes ON sessions.class_id = classes.class_id
+       JOIN Courses courses ON classes.course_id = courses.course_id
        WHERE session_code = ? AND is_active = TRUE AND expires_at > NOW()`,
       [cleanSessionCode]
     );
@@ -19,6 +27,9 @@ exports.submitAttendance = async (req, res) => {
     }
 
     const activeSession = sessions[0];
+    if (activeSession.course_name.trim().toLowerCase() !== cleanCourseName) {
+      return res.status(400).json({ success: false, message: 'The course name does not match this attendance session.' });
+    }
 
     const [enrollments] = await db.query(
       `SELECT e.enrollment_id 
@@ -33,16 +44,14 @@ exports.submitAttendance = async (req, res) => {
     }
 
     const enrollmentId = enrollments[0].enrollment_id;
-    const today = new Date().toISOString().split('T')[0];
-
     const connection = await db.getConnection();
     try {
       await connection.beginTransaction();
       await connection.query('SELECT enrollment_id FROM Enrollments WHERE enrollment_id = ? FOR UPDATE', [enrollmentId]);
 
       const [existingAttendance] = await connection.query(
-        'SELECT attendance_id FROM Attendance WHERE enrollment_id = ? AND attendance_date = ? LIMIT 1',
-        [enrollmentId, today]
+        'SELECT attendance_id FROM Attendance WHERE enrollment_id = ? AND attendance_date = CURDATE() LIMIT 1',
+        [enrollmentId]
       );
 
       if (existingAttendance.length > 0) {
@@ -52,8 +61,8 @@ exports.submitAttendance = async (req, res) => {
 
       await connection.query(
         `INSERT INTO Attendance (enrollment_id, attendance_date, status)
-         VALUES (?, ?, 'PRESENT')`,
-        [enrollmentId, today]
+         VALUES (?, CURDATE(), 'PRESENT')`,
+        [enrollmentId]
       );
       await connection.commit();
     } catch (error) {

@@ -13,6 +13,7 @@ router.get('/classes/:classId/students', teacherController.getClassStudents);
 router.post('/classes/:classId/students', teacherController.addStudentToClass);
 router.post('/classes/:classId/students/register', teacherController.registerStudentToClass);
 router.delete('/classes/:classId/students/:studentId', teacherController.removeStudentFromClass);
+router.get('/classes/:classId/monthly-attendance', teacherController.getMonthlyAttendance);
 router.post('/start-session', teacherController.startSession);
 router.post('/close-session', teacherController.closeSession);
 
