@@ -2,23 +2,26 @@ const db = require('../config/db');
 
 // Submit live attendance code
 exports.submitAttendance = async (req, res) => {
-  const { student_code, course_name, session_code } = req.body;
+  const { student_code, course_code, session_code } = req.body;
 
   try {
     const cleanStudentCode = student_code.trim().toUpperCase();
-    const cleanCourseName = course_name?.trim().toLowerCase();
-    const cleanSessionCode = session_code.trim();
+    const cleanCourseCode = course_code?.trim().toUpperCase();
+    const cleanSessionCode = session_code?.trim();
 
-    if (!cleanCourseName) {
-      return res.status(400).json({ success: false, message: 'Course name is required.' });
+    if (!cleanCourseCode) {
+      return res.status(400).json({ success: false, message: 'Course code is required.' });
+    }
+    if (!/^\d{6}$/.test(cleanSessionCode || '')) {
+      return res.status(400).json({ success: false, message: 'A valid 6-digit attendance code is required.' });
     }
 
     const [sessions] = await db.query(
-      `SELECT sessions.session_id, sessions.class_id, courses.course_name
+      `SELECT sessions.session_id, sessions.class_id, courses.course_code
        FROM AttendanceSessions sessions
        JOIN Classes classes ON sessions.class_id = classes.class_id
        JOIN Courses courses ON classes.course_id = courses.course_id
-       WHERE session_code = ? AND is_active = TRUE AND expires_at > NOW()`,
+       WHERE sessions.session_code = ? AND sessions.is_active = TRUE AND sessions.expires_at > NOW()`,
       [cleanSessionCode]
     );
 
@@ -27,12 +30,12 @@ exports.submitAttendance = async (req, res) => {
     }
 
     const activeSession = sessions[0];
-    if (activeSession.course_name.trim().toLowerCase() !== cleanCourseName) {
-      return res.status(400).json({ success: false, message: 'The course name does not match this attendance session.' });
+    if (activeSession.course_code.trim().toUpperCase() !== cleanCourseCode) {
+      return res.status(400).json({ success: false, message: 'The course code does not match this attendance session.' });
     }
 
     const [enrollments] = await db.query(
-      `SELECT e.enrollment_id 
+      `SELECT e.enrollment_id
        FROM Enrollments e
        JOIN Students s ON e.student_id = s.student_id
        WHERE s.student_code = ? AND e.class_id = ?`,

@@ -5,10 +5,12 @@ export default function StudentEnrollmentManager({ teacher, selectedClassId }) {
   const [newStudent, setNewStudent] = useState({ student_code: '', name_myanmar: '', email: '', username: '' });
   const [feedback, setFeedback] = useState(null);
   const [loading, setLoading] = useState(false);  
+  const [showStudents, setShowStudents] = useState(false);
 
   useEffect(() => {
     if (!selectedClassId) {
       setStudents([]);
+      setShowStudents(false);
       return;
     }
     setLoading(true);
@@ -57,7 +59,7 @@ export default function StudentEnrollmentManager({ teacher, selectedClassId }) {
   if (!selectedClassId) return <p style={{ marginTop: '20px', color: '#666' }}>Select one of your courses to manage students.</p>;
 
   return (
-    <section style={{ marginTop: '30px', padding: '20px', backgroundColor: '#fff', border: '1px solid #ddd', borderRadius: '6px' }}>
+    <section className="enrollment-page" style={{ marginTop: '30px', padding: '20px', backgroundColor: '#fff', border: '1px solid #ddd', borderRadius: '6px' }}>
       <h3 style={{ marginTop: 0 }}>Add New Student</h3>
       <p style={{ marginTop: 0, color: '#666' }}>Create a student account and add it to this course.</p>
       <form onSubmit={handleRegisterStudent} style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '12px' }}>
@@ -68,14 +70,39 @@ export default function StudentEnrollmentManager({ teacher, selectedClassId }) {
         <button type="submit" style={{ gridColumn: '1 / -1', padding: '11px 16px', backgroundColor: '#28a745', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>Add Student to Course</button>
       </form>
       {feedback && <p style={{ color: feedback.success ? '#28a745' : '#dc3545', fontWeight: 'bold' }}>{feedback.message}</p>}
-      {loading ? <p>Loading students...</p> : students.length === 0 ? <p style={{ color: '#666' }}>No students enrolled in this course.</p> : (
-        <div style={{ display: 'grid', gap: '8px' }}>
-          {students.map((student) => (
-            <div key={student.student_id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', padding: '10px', borderBottom: '1px solid #eee' }}>
-              <span><strong>{student.student_code}</strong> - {student.name_myanmar}</span>
-              <button type="button" onClick={() => handleRemoveStudent(student)} style={{ padding: '6px 10px', backgroundColor: '#dc3545', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Remove</button>
+      <button
+        type="button"
+        onClick={() => setShowStudents(true)}
+        style={{ marginTop: '16px', width: '100%', padding: '11px 16px', backgroundColor: '#0056b3', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+      >
+        View Enrolled Students ({students.length})
+      </button>
+
+      {showStudents && (
+        <div
+          className="enrollment-modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="enrolled-students-title"
+          onClick={(event) => event.target === event.currentTarget && setShowStudents(false)}
+          style={{ position: 'fixed', inset: 0, zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', backgroundColor: 'rgba(0, 0, 0, 0.45)' }}
+        >
+          <div className="enrollment-modal" style={{ width: 'min(680px, 100%)', maxHeight: '80vh', overflowY: 'auto', padding: '20px', backgroundColor: '#fff', borderRadius: '6px', boxShadow: '0 8px 30px rgba(0, 0, 0, 0.25)' }}>
+            <div className="enrollment-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', marginBottom: '12px' }}>
+              <h3 id="enrolled-students-title" style={{ margin: 0 }}>Enrolled Students ({students.length})</h3>
+              <button type="button" onClick={() => setShowStudents(false)} aria-label="Close enrolled students" className="modal-close-button" style={{ padding: '6px 12px', backgroundColor: '#6c757d', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>×</button>
             </div>
-          ))}
+            {loading ? <p>Loading students...</p> : students.length === 0 ? <p style={{ color: '#666' }}>No students enrolled in this course.</p> : (
+              <div style={{ display: 'grid', gap: '8px' }}>
+                {students.map((student) => (
+                  <div className="enrolled-student-row" key={student.student_id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', padding: '10px', borderBottom: '1px solid #eee' }}>
+                    <span><strong>{student.student_code}</strong> - {student.name_myanmar}</span>
+                    <button type="button" onClick={() => handleRemoveStudent(student)} style={{ padding: '6px 10px', backgroundColor: '#dc3545', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Remove</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </section>

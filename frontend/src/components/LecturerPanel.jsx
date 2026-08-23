@@ -4,8 +4,17 @@ import MonthlyAttendance from './MonthlyAttendance';
 
 export default function LecturerPanel({ teacher }) {
   const [classList, setClassList] = useState([]);
-  const [selectedClassId, setSelectedClassId] = useState('');
-  const [activeSession, setActiveSession] = useState(null);
+  const [selectedClassId, setSelectedClassId] = useState(() => {
+    return localStorage.getItem('attendance_selected_class') || '';
+  });
+  const [activeSession, setActiveSession] = useState(() => {
+    try {
+      const savedSession = JSON.parse(localStorage.getItem('attendance_active_session'));
+      return savedSession?.teacher_id === teacher.teacher_id ? savedSession : null;
+    } catch {
+      return null;
+    }
+  });
   const [courseForm, setCourseForm] = useState({ course_code: '', course_name: '', is_elective: false, room_number: 'L 202', academic_year: '2025-2026', semester: 'Semester VIII' });
   const [courseFeedback, setCourseFeedback] = useState(null);
   const [deletingClassId, setDeletingClassId] = useState(null);
@@ -63,7 +72,10 @@ export default function LecturerPanel({ teacher }) {
       });
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.error || data.message || 'Unable to open attendance code.');
-      setActiveSession(data);
+      const session = { ...data, class_id: selectedClassId, teacher_id: teacher.teacher_id };
+      setActiveSession(session);
+      localStorage.setItem('attendance_active_session', JSON.stringify(session));
+      localStorage.setItem('attendance_selected_class', selectedClassId);
     } catch (error) {
       setSessionFeedback({ success: false, message: error.message });
     } finally {
@@ -102,6 +114,7 @@ export default function LecturerPanel({ teacher }) {
       const data = await response.json();
       if (!response.ok || !data.success) throw new Error(data.error || data.message || 'Unable to end attendance session.');
       setActiveSession(null);
+      localStorage.removeItem('attendance_active_session');
     } catch (error) {
       setSessionFeedback({ success: false, message: error.message });
     } finally {
@@ -122,42 +135,44 @@ export default function LecturerPanel({ teacher }) {
   };
 
   return (
-    <div style={{ marginTop: '20px', padding: '20px', backgroundColor: '#f8f9fa', borderRadius: '6px', border: '1px solid #ccc' }}>
+    <div className="lecturer-page" style={{ marginTop: '20px', padding: '20px', backgroundColor: '#f8f9fa', borderRadius: '6px', border: '1px solid #ccc' }}>
       <h3>Lecturer Session Controller</h3>
-      <div style={{ marginBottom: '25px', padding: '20px', backgroundColor: '#fff', borderRadius: '6px', border: '1px solid #ddd' }}>
-        <h3>Create Your Course</h3>
-        <form onSubmit={handleCreateCourse} style={{ display: 'grid', gap: '12px' }}>
-          <input type="text" placeholder="Course code (e.g. CST-4301)" value={courseForm.course_code} onChange={(e) => setCourseForm({ ...courseForm, course_code: e.target.value })} required />
-          <input type="text" placeholder="Course name" value={courseForm.course_name} onChange={(e) => setCourseForm({ ...courseForm, course_name: e.target.value })} required />
-          <input type="text" placeholder="Room number" value={courseForm.room_number} onChange={(e) => setCourseForm({ ...courseForm, room_number: e.target.value })} required />
-          <label><input type="checkbox" checked={courseForm.is_elective} onChange={(e) => setCourseForm({ ...courseForm, is_elective: e.target.checked })} /> Elective course</label>
-          <button type="submit" style={{ padding: '10px 20px', backgroundColor: '#0056b3', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>Create Course</button>
-        </form>
-        {courseFeedback && <p style={{ color: courseFeedback.success ? '#28a745' : '#dc3545', fontWeight: 'bold' }}>{courseFeedback.message}</p>}
-      </div>
-      <div style={{ marginBottom: '25px', padding: '20px', backgroundColor: '#fff', borderRadius: '6px', border: '1px solid #ddd' }}>
-        <h3>Your Courses</h3>
-        {classList.length === 0 ? (
-          <p style={{ color: '#666' }}>You have not created any courses yet.</p>
-        ) : (
-          <div style={{ display: 'grid', gap: '10px' }}>
-            {classList.map((course) => (
-              <div key={course.class_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '12px', border: '1px solid #ddd', borderRadius: '4px' }}>
-                <span><strong>{course.course_code}</strong> - {course.course_name} ({course.room_number})</span>
-                <button type="button" onClick={() => handleDeleteCourse(course)} disabled={deletingClassId === course.class_id} style={{ padding: '8px 12px', backgroundColor: '#dc3545', color: '#fff', border: 'none', borderRadius: '4px', cursor: deletingClassId === course.class_id ? 'wait' : 'pointer', fontWeight: 'bold' }}>
-                  {deletingClassId === course.class_id ? 'Deleting...' : 'Delete'}
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
+      <div className="course-management-grid">
+        <div className="course-card" style={{ marginBottom: '25px', padding: '20px', backgroundColor: '#fff', borderRadius: '6px', border: '1px solid #ddd' }}>
+          <h3>Create Your Course</h3>
+          <form onSubmit={handleCreateCourse} style={{ display: 'grid', gap: '12px' }}>
+            <input type="text" placeholder="Course code (e.g. CST-4301)" value={courseForm.course_code} onChange={(e) => setCourseForm({ ...courseForm, course_code: e.target.value })} required />
+            <input type="text" placeholder="Course name" value={courseForm.course_name} onChange={(e) => setCourseForm({ ...courseForm, course_name: e.target.value })} required />
+            <input type="text" placeholder="Room number" value={courseForm.room_number} onChange={(e) => setCourseForm({ ...courseForm, room_number: e.target.value })} required />
+            <label><input type="checkbox" checked={courseForm.is_elective} onChange={(e) => setCourseForm({ ...courseForm, is_elective: e.target.checked })} /> Elective course</label>
+            <button type="submit" style={{ padding: '10px 20px', backgroundColor: '#0056b3', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>Create Course</button>
+          </form>
+          {courseFeedback && <p style={{ color: courseFeedback.success ? '#28a745' : '#dc3545', fontWeight: 'bold' }}>{courseFeedback.message}</p>}
+        </div>
+        <div className="course-card" style={{ marginBottom: '25px', padding: '20px', backgroundColor: '#fff', borderRadius: '6px', border: '1px solid #ddd' }}>
+          <h3>Your Courses</h3>
+          {classList.length === 0 ? (
+            <p style={{ color: '#666' }}>You have not created any courses yet.</p>
+          ) : (
+            <div style={{ display: 'grid', gap: '10px' }}>
+              {classList.map((course) => (
+                <div key={course.class_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '12px', border: '1px solid #ddd', borderRadius: '4px' }}>
+                  <span><strong>{course.course_code}</strong> - {course.course_name} ({course.room_number})</span>
+                  <button type="button" onClick={() => handleDeleteCourse(course)} disabled={deletingClassId === course.class_id} style={{ padding: '8px 12px', backgroundColor: '#dc3545', color: '#fff', border: 'none', borderRadius: '4px', cursor: deletingClassId === course.class_id ? 'wait' : 'pointer', fontWeight: 'bold' }}>
+                    {deletingClassId === course.class_id ? 'Deleting...' : 'Delete'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
       <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
         <select 
           value={selectedClassId} 
           onChange={(e) => {
             setSelectedClassId(e.target.value);
-            setActiveSession(null);
+            localStorage.setItem('attendance_selected_class', e.target.value);
             setSessionFeedback(null);
           }}
           style={{ padding: '10px', flex: 1, fontSize: '15px' }}
@@ -194,7 +209,7 @@ export default function LecturerPanel({ teacher }) {
       <StudentEnrollmentManager teacher={teacher} selectedClassId={selectedClassId} />
       <MonthlyAttendance teacher={teacher} selectedClassId={selectedClassId} />
 
-      <div style={{ marginTop: '30px', padding: '20px', backgroundColor: '#fff', borderRadius: '6px', border: '1px solid #ddd' }}>
+      {/* <div style={{ marginTop: '30px', padding: '20px', backgroundColor: '#fff', borderRadius: '6px', border: '1px solid #ddd' }}>
         <h3>Search Attendance Records</h3>
         <form onSubmit={handleQueryHistory} style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
           <input
@@ -234,7 +249,7 @@ export default function LecturerPanel({ teacher }) {
             </tbody>
           </table>
         )}
-      </div>
+      </div> */}
     </div>
   );
 }

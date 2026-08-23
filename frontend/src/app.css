@@ -1,0 +1,377 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+:root {
+  font-family: 'DM Sans', sans-serif;
+  color: #18232d;
+  background: #edf3f1;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background:
+    linear-gradient(135deg, rgba(213, 232, 225, 0.65), transparent 42%),
+    #edf3f1;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: 'Space Grotesk', sans-serif;
+  letter-spacing: 0;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  transition: transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+
+button:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 14px rgba(24, 35, 45, 0.14);
+}
+
+.app-shell {
+  width: min(1180px, calc(100% - 32px));
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 28px 0 56px;
+}
+
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 24px 28px;
+  border: 1px solid #d6e2dd;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 16px 38px rgba(42, 66, 57, 0.1);
+}
+
+.brand-block h2 {
+  margin: 0;
+  color: #173f38;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(1.15rem, 2vw, 1.6rem);
+  line-height: 1.2;
+}
+
+.brand-block p {
+  margin: 7px 0 0;
+  color: #6b7b78;
+  font-size: 0.9rem;
+}
+
+.site-nav {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.site-nav button {
+  margin-right: 0 !important;
+  border-radius: 8px !important;
+}
+
+.app-content {
+  display: grid;
+  gap: 24px;
+  margin-top: 28px;
+}
+
+.course-management-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  align-items: stretch;
+}
+
+.course-card {
+  min-width: 0;
+  margin-bottom: 0 !important;
+}
+
+.app-content > * {
+  min-width: 0;
+}
+
+.student-page,
+.lecturer-page,
+.timetable-page {
+  min-width: 0;
+}
+
+.lecturer-page > h3,
+.student-page h3,
+.enrollment-page h3,
+.monthly-page h3 {
+  color: #173f38;
+}
+
+.lecturer-page > h3 {
+  margin: 2px 0 22px;
+  padding-left: 14px;
+  border-left: 4px solid #e49b42;
+  font-size: 1.25rem;
+}
+
+.course-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.course-card::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 4px;
+  background: #167563;
+  content: '';
+}
+
+.course-card h3 {
+  margin-top: 4px;
+  margin-bottom: 20px;
+}
+
+.lecturer-page > div:not(.course-management-grid) {
+  background-color: rgba(255, 255, 255, 0.78) !important;
+}
+
+.lecturer-page > div[style*='display: flex'] {
+  align-items: stretch !important;
+  padding: 4px;
+  border: 1px solid #cbd8d3;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.lecturer-page > div[style*='display: flex'] select {
+  border: 0;
+  background: transparent;
+}
+
+.course-card > div[style*='display: grid'] > div {
+  border-color: #e0e9e5 !important;
+  border-radius: 8px !important;
+  background: #fbfdfc;
+}
+
+.enrollment-page,
+.monthly-page {
+  overflow: hidden;
+}
+
+.enrollment-modal-backdrop {
+  background: rgba(15, 38, 33, 0.58) !important;
+  backdrop-filter: blur(4px);
+}
+
+.enrollment-modal {
+  max-height: min(760px, 86vh) !important;
+  padding: 24px !important;
+  border: 1px solid #d6e2dd;
+  border-radius: 16px !important;
+  box-shadow: 0 24px 70px rgba(15, 38, 33, 0.28) !important;
+  animation: modal-enter 180ms ease-out;
+}
+
+.enrollment-modal-header {
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e1eae6;
+}
+
+.enrollment-modal-header h3 {
+  color: #173f38;
+}
+
+.modal-close-button {
+  display: inline-grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  place-items: center;
+  padding: 0 !important;
+  border: 1px solid #cbd8d3 !important;
+  border-radius: 50% !important;
+  background: #e9f0ed !important;
+  color: #31534b !important;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 1.55rem;
+  font-weight: 400;
+  line-height: 1;
+  transition: none;
+}
+
+.modal-close-button:hover {
+  transform: none !important;
+  box-shadow: none !important;
+  background: #e9f0ed !important;
+  color: #31534b !important;
+}
+
+.enrolled-student-row {
+  min-height: 52px;
+  padding: 10px 8px !important;
+  border-bottom-color: #e6eeeb !important;
+  border-radius: 7px;
+}
+
+.enrolled-student-row:hover {
+  background: #f1f7f4;
+}
+
+@keyframes modal-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.student-page > div,
+.lecturer-page > div,
+.lecturer-page > section,
+.enrollment-page,
+.monthly-page {
+  border-color: #d6e2dd !important;
+  border-radius: 12px !important;
+  box-shadow: 0 8px 24px rgba(42, 66, 57, 0.06);
+}
+
+.student-page input,
+.lecturer-page input,
+.lecturer-page select,
+.enrollment-page input,
+.monthly-page input {
+  min-height: 40px;
+  border: 1px solid #cbd8d3;
+  border-radius: 7px;
+  padding: 8px 10px;
+  color: #18232d;
+  background: #fbfdfc;
+}
+
+.student-page input:focus,
+.lecturer-page input:focus,
+.lecturer-page select:focus,
+.enrollment-page input:focus,
+.monthly-page input:focus {
+  outline: 3px solid rgba(22, 117, 99, 0.16);
+  border-color: #167563;
+}
+
+.lecturer-page input[type='checkbox'],
+.enrollment-page input[type='checkbox'] {
+  width: 17px;
+  min-width: 17px;
+  height: 17px;
+  min-height: 17px;
+  margin: 0;
+  accent-color: #167563;
+}
+
+.lecturer-page label:has(input[type='checkbox']),
+.enrollment-page label:has(input[type='checkbox']) {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 32px;
+  color: #30433f;
+}
+
+.student-page > div,
+.enrollment-page,
+.monthly-page {
+  background: rgba(255, 255, 255, 0.96) !important;
+}
+
+.student-page form button,
+.enrollment-page form button {
+  min-height: 44px;
+}
+
+.timetable-page {
+  overflow: hidden;
+  padding: 4px 0 0;
+}
+
+.timetable-page table {
+  border-color: #cbd8d3 !important;
+  box-shadow: 0 8px 24px rgba(42, 66, 57, 0.06) !important;
+}
+
+@media (max-width: 760px) {
+  .app-shell {
+    width: min(100% - 20px, 620px);
+    padding-top: 12px;
+  }
+
+  .site-header {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 18px;
+    padding: 18px;
+  }
+
+  .site-header {
+    padding: 18px;
+  }
+
+  .site-nav {
+    justify-content: stretch;
+  }
+
+  .site-nav button {
+    flex: 1;
+    min-width: 130px;
+  }
+
+  .app-content {
+    margin-top: 16px;
+    gap: 16px;
+  }
+
+  .lecturer-page,
+  .student-page {
+    padding: 14px !important;
+  }
+
+  .course-management-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .enrollment-page,
+  .monthly-page {
+    padding: 14px !important;
+  }
+
+  .enrollment-page form {
+    grid-template-columns: 1fr !important;
+  }
+
+  .enrollment-page form button {
+    grid-column: auto !important;
+  }
+}

@@ -75,7 +75,7 @@ export default function Timetable() {
   }
 
   return (
-    <div style={{ marginTop: '25px', fontFamily: 'Segoe UI, sans-serif' }}>
+    <div className="timetable-page" style={{ marginTop: '25px', fontFamily: 'Segoe UI, sans-serif' }}>
       {/* Header Info */}
       <div style={{ textAlign: 'center', marginBottom: '15px' }}>
         <h4 style={{ margin: '0 0 4px 0', color: '#0056b3' }}>

@@ -26,9 +26,15 @@ export default function MonthlyAttendance({ teacher, selectedClassId }) {
 
   if (!selectedClassId) return null;
   const days = sheet ? Array.from({ length: 22 }, (_, index) => index + 1) : [];
+  const attendanceSummary = days.map((day) => {
+    if (!sheet?.attendance_dates?.[day - 1]) return null;
+    const present = sheet.students.filter((student) => student.days[day] === 'PRESENT').length;
+    const lateOrLeave = sheet.students.filter((student) => ['LATE', 'LEAVE'].includes(student.days[day])).length;
+    return { present, absent: Math.max(sheet.students.length - present - lateOrLeave, 0) };
+  });
 
   return (
-    <section style={{ marginTop: '30px', padding: '20px', backgroundColor: '#fff', border: '1px solid #ddd', borderRadius: '6px' }}>
+    <section className="monthly-page" style={{ marginTop: '30px', padding: '20px', backgroundColor: '#fff', border: '1px solid #ddd', borderRadius: '6px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
         <div>
           <h3 style={{ margin: 0 }}>Monthly Attendance Record</h3>
@@ -71,6 +77,24 @@ export default function MonthlyAttendance({ teacher, selectedClassId }) {
                   <td style={{ padding: '8px 5px', border: '1px solid #c8d0d5', textAlign: 'left' }}>{student.teacher_remark || ''}</td>
                 </tr>
               ))}
+              <tr style={{ backgroundColor: '#eef2f4', textAlign: 'center', fontWeight: 'bold' }}>
+                <td colSpan="3" style={{ padding: '8px 4px', border: '1px solid #9aa5ad', textAlign: 'left', color: '#198754' }}>Present Students</td>
+                {attendanceSummary.map((summary, index) => (
+                  <td key={index} style={{ padding: '6px 2px', border: '1px solid #9aa5ad', whiteSpace: 'normal' }}>
+                    {summary ? summary.present : ''}
+                  </td>
+                ))}
+                <td style={{ padding: '8px 5px', border: '1px solid #9aa5ad' }} />
+              </tr>
+              <tr style={{ backgroundColor: '#fff5f5', textAlign: 'center', fontWeight: 'bold' }}>
+                <td colSpan="3" style={{ padding: '8px 4px', border: '1px solid #9aa5ad', textAlign: 'left', color: '#dc3545' }}>Absent Students</td>
+                {attendanceSummary.map((summary, index) => (
+                  <td key={index} style={{ padding: '6px 2px', border: '1px solid #9aa5ad' }}>
+                    {summary ? summary.absent : ''}
+                  </td>
+                ))}
+                <td style={{ padding: '8px 5px', border: '1px solid #9aa5ad' }} />
+              </tr>
             </tbody>
           </table>
           {sheet.students.length === 0 && <p>No students are enrolled in this course.</p>}

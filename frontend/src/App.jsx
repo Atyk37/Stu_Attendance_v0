@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import LecturerPanel from './components/LecturerPanel';
 import StudentPanel from './components/StudentPanel';
 import Timetable from './components/Timetable';
 import TeacherProfile from './components/TeacherProfile';
+import './app.css';
 
 function TeacherAccess({ onAuthenticated, onBack }) {
   const [mode, setMode] = useState('login');
@@ -49,8 +50,19 @@ function TeacherAccess({ onAuthenticated, onBack }) {
   );
 }
 
+function viewFromPath(pathname, teacher) {
+  if (pathname === '/frontend/src/components/StudentPanel.jsx') return 'student';
+  if (pathname === '/frontend/src/components/LecturerPanel.jsx') return teacher ? 'lecturer' : 'teacher-access';
+  return null;
+}
+
+function pathForView(view) {
+  return view === 'student'
+    ? '/frontend/src/components/StudentPanel.jsx'
+    : '/frontend/src/components/LecturerPanel.jsx';
+}
+
 export default function App() {
-  const [viewRole, setViewRole] = useState('student');
   const [teacher, setTeacher] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('attendance_teacher'));
@@ -58,11 +70,43 @@ export default function App() {
       return null;
     }
   });
+  const [viewRole, setViewRole] = useState(() => {
+    const pathView = viewFromPath(window.location.pathname, teacher);
+    if (pathView) return pathView;
+    const savedView = localStorage.getItem('attendance_view_role');
+    if (savedView === 'student') return 'student';
+    return teacher ? 'lecturer' : 'student';
+  });
+
+  useEffect(() => {
+    const currentPath = pathForView(viewRole);
+    if (window.location.pathname !== currentPath) {
+      window.history.replaceState(null, '', currentPath);
+    }
+
+    const handlePopState = () => {
+      const nextView = viewFromPath(window.location.pathname, teacher) || 'student';
+      setViewRole(nextView);
+      localStorage.setItem('attendance_view_role', nextView);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [teacher, viewRole]);
+
+  const changeView = (nextView) => {
+    setViewRole(nextView);
+    localStorage.setItem('attendance_view_role', nextView);
+    const nextPath = pathForView(nextView);
+    if (window.location.pathname !== nextPath) {
+      window.history.pushState(null, '', nextPath);
+    }
+  };
 
   const handleAuthenticated = (signedInTeacher) => {
     setTeacher(signedInTeacher);
     localStorage.setItem('attendance_teacher', JSON.stringify(signedInTeacher));
-    setViewRole('lecturer');
+    changeView('lecturer');
   };
 
   const handleTeacherUpdated = (updatedTeacher) => {
@@ -73,40 +117,45 @@ export default function App() {
   const handleLogout = () => {
     localStorage.removeItem('attendance_teacher');
     setTeacher(null);
-    setViewRole('student');
+    changeView('student');
   };
 
   return (
-    <div style={{ maxWidth: '960px', margin: '0 auto', padding: '20px', fontFamily: 'Segoe UI, sans-serif' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #0056b3', paddingBottom: '12px' }}>
-        <h2 style={{ margin: 0, color: '#0056b3' }}>Polytechnic University (Myeik) — Attendance Portal</h2>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+    <div className="app-shell">
+      <header className="site-header">
+        <div className="brand-block">
+          <h2>Polytechnic University (Myeik) — Attendance Portal</h2>
+          <p>Simple, reliable attendance management for every class.</p>
+        </div>
+        <div className="site-nav">
           <button 
-            onClick={() => setViewRole('student')} 
+            onClick={() => changeView('student')} 
             style={{ padding: '8px 16px', marginRight: '8px', backgroundColor: viewRole === 'student' ? '#0056b3' : '#e0e0e0', color: viewRole === 'student' ? '#fff' : '#333', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
           >
             Student Panel
           </button>
           <button
-            onClick={() => setViewRole(teacher ? 'lecturer' : 'teacher-access')}
+            onClick={() => changeView(teacher ? 'lecturer' : 'teacher-access')}
             style={{ padding: '8px 16px', backgroundColor: viewRole === 'lecturer' || viewRole === 'teacher-access' ? '#0056b3' : '#e0e0e0', color: viewRole === 'lecturer' || viewRole === 'teacher-access' ? '#fff' : '#333', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
           >
             Lecturer Mode
           </button>
           {teacher && <TeacherProfile teacher={teacher} onTeacherUpdated={handleTeacherUpdated} onLogout={handleLogout} />}
         </div>
-      </div>
+      </header>
 
-      {viewRole === 'teacher-access' ? (
-        <TeacherAccess onAuthenticated={handleAuthenticated} onBack={() => setViewRole('student')} />
-      ) : viewRole === 'lecturer' ? (
+      <main className="app-content">
+        {viewRole === 'teacher-access' ? (
+        <TeacherAccess onAuthenticated={handleAuthenticated} onBack={() => changeView('student')} />
+        ) : viewRole === 'lecturer' ? (
         <LecturerPanel teacher={teacher} />
-      ) : (
+        ) : (
         <>
           <StudentPanel />
           <Timetable />
         </>
-      )}
+        )}
+      </main>
     </div>
   );
 }
