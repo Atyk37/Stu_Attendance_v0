@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { API_BASE_URL } from '../api';
 
 const statusMark = { PRESENT: 'P', ABSENT: 'A', LATE: 'L', LEAVE: 'LV' };
 
@@ -12,7 +13,7 @@ export default function MonthlyAttendance({ teacher, selectedClassId }) {
     if (!selectedClassId) return;
     setLoading(true);
     setError('');
-    fetch(`http://localhost:3000/api/lecturer/classes/${selectedClassId}/monthly-attendance?teacher_id=${teacher.teacher_id}&month=${month}`)
+    fetch(`${API_BASE_URL}/api/lecturer/classes/${selectedClassId}/monthly-attendance?teacher_id=${teacher.teacher_id}&month=${month}`)
       .then(async (response) => {
         const contentType = response.headers.get('content-type') || '';
         const data = contentType.includes('application/json') ? await response.json() : { error: `Server returned HTTP ${response.status}. Restart the backend server and try again.` };

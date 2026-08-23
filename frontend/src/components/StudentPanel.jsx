@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { API_BASE_URL } from '../api';
 
 export default function StudentPanel() {
   const [inputStudentCode, setInputStudentCode] = useState('');
@@ -12,7 +13,7 @@ export default function StudentPanel() {
     setSubmitFeedback(null);
     setIsSubmitting(true);
     try {
-      const res = await fetch('http://localhost:3000/api/student/submit-attendance', {
+      const res = await fetch(`${API_BASE_URL}/api/student/submit-attendance`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ student_code: inputStudentCode, course_code: inputCourseCode, session_code: inputSessionCode })

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../api';
 
 export default function Timetable() {
   const [weeklySchedule, setWeeklySchedule] = useState([]);
@@ -17,7 +18,7 @@ export default function Timetable() {
 
   useEffect(() => {
     // Explicitly target express port to avoid Vite dev server 404
-    fetch('http://localhost:3000/api/student/schedule')
+    fetch(`${API_BASE_URL}/api/student/schedule`)
       .then((res) => {
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);

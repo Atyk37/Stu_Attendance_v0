@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import StudentEnrollmentManager from './StudentEnrollmentManager';
 import MonthlyAttendance from './MonthlyAttendance';
+import { API_BASE_URL } from '../api';
 
 export default function LecturerPanel({ teacher }) {
   const [classList, setClassList] = useState([]);
@@ -24,7 +25,7 @@ export default function LecturerPanel({ teacher }) {
   const [attendanceHistory, setAttendanceHistory] = useState([]);
 
   useEffect(() => {
-    fetch(`http://localhost:3000/api/lecturer/classes?teacher_id=${teacher.teacher_id}`)
+    fetch(`${API_BASE_URL}/api/lecturer/classes?teacher_id=${teacher.teacher_id}`)
       .then((res) => res.json())
       .then((data) => setClassList(data))
       .catch((err) => console.error(err));
@@ -38,7 +39,7 @@ export default function LecturerPanel({ teacher }) {
       return;
     }
     try {
-      const response = await fetch('http://localhost:3000/api/lecturer/courses', {
+      const response = await fetch(`${API_BASE_URL}/api/lecturer/courses`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...courseForm, teacher_id: teacher.teacher_id })
@@ -53,7 +54,7 @@ export default function LecturerPanel({ teacher }) {
 
       setCourseFeedback({ success: true, message: 'Course created successfully.' });
       setCourseForm({ course_code: '', course_name: '', is_elective: false, room_number: 'L 202', academic_year: '2025-2026', semester: 'Semester VIII' });
-      const classesResponse = await fetch(`http://localhost:3000/api/lecturer/classes?teacher_id=${teacher.teacher_id}`);
+      const classesResponse = await fetch(`${API_BASE_URL}/api/lecturer/classes?teacher_id=${teacher.teacher_id}`);
       setClassList(await classesResponse.json());
     } catch (error) {
       setCourseFeedback({ success: false, message: error.message });
@@ -65,7 +66,7 @@ export default function LecturerPanel({ teacher }) {
     setSessionLoading(true);
     setSessionFeedback(null);
     try {
-      const res = await fetch('http://localhost:3000/api/lecturer/start-session', {
+      const res = await fetch(`${API_BASE_URL}/api/lecturer/start-session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ class_id: selectedClassId, teacher_id: teacher.teacher_id, duration_minutes: 10 })
@@ -88,7 +89,7 @@ export default function LecturerPanel({ teacher }) {
     setDeletingClassId(course.class_id);
     setCourseFeedback(null);
     try {
-      const response = await fetch(`http://localhost:3000/api/lecturer/courses/${course.class_id}?teacher_id=${teacher.teacher_id}`, { method: 'DELETE' });
+      const response = await fetch(`${API_BASE_URL}/api/lecturer/courses/${course.class_id}?teacher_id=${teacher.teacher_id}`, { method: 'DELETE' });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Unable to delete course.');
       setClassList((currentClasses) => currentClasses.filter((item) => item.class_id !== course.class_id));
@@ -106,7 +107,7 @@ export default function LecturerPanel({ teacher }) {
     setSessionLoading(true);
     setSessionFeedback(null);
     try {
-      const response = await fetch('http://localhost:3000/api/lecturer/close-session', {
+      const response = await fetch(`${API_BASE_URL}/api/lecturer/close-session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ session_id: activeSession.session_id, teacher_id: teacher.teacher_id })
@@ -125,7 +126,7 @@ export default function LecturerPanel({ teacher }) {
   const handleQueryHistory = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch(`http://localhost:3000/api/student/attendance/${searchHistoryCode}`);
+      const res = await fetch(`${API_BASE_URL}/api/student/attendance/${searchHistoryCode}`);
       const data = await res.json();
       if (res.ok) setAttendanceHistory(data);
       else alert(data.error);

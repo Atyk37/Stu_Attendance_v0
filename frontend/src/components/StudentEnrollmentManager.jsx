@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { API_BASE_URL } from '../api';
 
 export default function StudentEnrollmentManager({ teacher, selectedClassId }) {
   const [students, setStudents] = useState([]);
@@ -14,7 +15,7 @@ export default function StudentEnrollmentManager({ teacher, selectedClassId }) {
       return;
     }
     setLoading(true);
-    fetch(`http://localhost:3000/api/lecturer/classes/${selectedClassId}/students?teacher_id=${teacher.teacher_id}`)
+    fetch(`${API_BASE_URL}/api/lecturer/classes/${selectedClassId}/students?teacher_id=${teacher.teacher_id}`)
       .then((response) => response.json())
       .then((data) => {
         if (data.error) throw new Error(data.error);
@@ -27,7 +28,7 @@ export default function StudentEnrollmentManager({ teacher, selectedClassId }) {
   const handleRemoveStudent = async (student) => {
     if (!window.confirm(`Remove ${student.student_code} from this course?`)) return;
     try {
-      const response = await fetch(`http://localhost:3000/api/lecturer/classes/${selectedClassId}/students/${student.student_id}?teacher_id=${teacher.teacher_id}`, { method: 'DELETE' });
+      const response = await fetch(`${API_BASE_URL}/api/lecturer/classes/${selectedClassId}/students/${student.student_id}?teacher_id=${teacher.teacher_id}`, { method: 'DELETE' });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Unable to remove student.');
       setStudents((currentStudents) => currentStudents.filter((item) => item.student_id !== student.student_id));
@@ -41,7 +42,7 @@ export default function StudentEnrollmentManager({ teacher, selectedClassId }) {
     event.preventDefault();
     setFeedback(null);
     try {
-      const response = await fetch(`http://localhost:3000/api/lecturer/classes/${selectedClassId}/students/register`, {
+      const response = await fetch(`${API_BASE_URL}/api/lecturer/classes/${selectedClassId}/students/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ teacher_id: teacher.teacher_id, ...newStudent })

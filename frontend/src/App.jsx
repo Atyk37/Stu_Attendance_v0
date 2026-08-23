@@ -3,6 +3,7 @@ import LecturerPanel from './components/LecturerPanel';
 import StudentPanel from './components/StudentPanel';
 import Timetable from './components/Timetable';
 import TeacherProfile from './components/TeacherProfile';
+import { API_BASE_URL } from './api';
 import './app.css';
 
 function TeacherAccess({ onAuthenticated, onBack }) {
@@ -14,7 +15,7 @@ function TeacherAccess({ onAuthenticated, onBack }) {
     event.preventDefault();
     setFeedback(null);
     try {
-      const response = await fetch(`http://localhost:3000/api/lecturer/${mode}`, {
+      const response = await fetch(`${API_BASE_URL}/api/lecturer/${mode}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form)
