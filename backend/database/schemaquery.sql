@@ -2,10 +2,6 @@ CREATE DATABASE IF NOT EXISTS attendance_system;
 USE attendance_system;
 
 SET FOREIGN_KEY_CHECKS = 0;
-
-DROP VIEW IF EXISTS MonthlyAttendanceReport;
-DROP TABLE IF EXISTS MonthlyAttendanceRecords;
-DROP TABLE IF EXISTS AttendanceMonths;
 DROP TABLE IF EXISTS Attendance;
 DROP TABLE IF EXISTS AttendanceSessions;
 DROP TABLE IF EXISTS Schedule;
@@ -14,45 +10,19 @@ DROP TABLE IF EXISTS Classes;
 DROP TABLE IF EXISTS Courses;
 DROP TABLE IF EXISTS Students;
 DROP TABLE IF EXISTS Teachers;
-
 SET FOREIGN_KEY_CHECKS = 1;
 
 /*
-    ============================================================
-    Attendance System Database Schema
-    ============================================================
+    Minimal but suitable attendance schema for this application.
+    Main idea:
+      Teachers -> Classes -> Courses
+      Students -> Enrollments -> Classes
+      AttendanceSessions -> Classes
+      Attendance -> Enrollments
 
-    This schema is designed for a university attendance system.
-    The database is built around these ideas:
-
-    1. Teachers create classes for courses.
-    2. Students are enrolled into those classes.
-    3. A live attendance session is opened for a class.
-    4. Students submit their attendance using a session code.
-    5. Daily attendance is stored in Attendance.
-    6. Monthly summaries are generated from daily data for report viewing.
-
-    Relationship flow:
-        Teachers -> Classes -> Courses
-        Students -> Enrollments -> Classes
-        AttendanceSessions -> Classes
-        Attendance -> Enrollments
-        AttendanceMonths -> Classes
-        MonthlyAttendanceRecords -> Enrollments + AttendanceMonths
-
-    Notes:
-    - The most important relationship is Enrollments.
-      It connects a student to a class.
-    - Attendance is stored per enrollment, not just per student.
-      This prevents duplicate attendance records across different classes.
-    - Monthly tables are summary/reporting tables only.
-      They are not the main source of daily attendance truth.
-    ============================================================
+    This keeps the system efficient and removes extra monthly summary tables that are not required for the app flow.
 */
 
--- 1) Teachers table
--- Purpose: stores lecturer/teacher login accounts and basic profile info.
--- Important: each teacher can create many classes.
 CREATE TABLE Teachers (
     teacher_id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
@@ -61,9 +31,6 @@ CREATE TABLE Teachers (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
--- 2) Students table
--- Purpose: stores all student profiles.
--- Important: student_code is the public attendance ID used by students.
 CREATE TABLE Students (
     student_id INT AUTO_INCREMENT PRIMARY KEY,
     student_code VARCHAR(30) UNIQUE NOT NULL,
@@ -73,9 +40,6 @@ CREATE TABLE Students (
     telegram_id VARCHAR(50) DEFAULT NULL
 ) ENGINE=InnoDB;
 
--- 3) Courses table
--- Purpose: stores the master list of available subjects.
--- Important: a course is the subject itself, while a class is a specific course instance.
 CREATE TABLE Courses (
     course_id INT AUTO_INCREMENT PRIMARY KEY,
     course_code VARCHAR(30) UNIQUE NOT NULL,
@@ -83,9 +47,6 @@ CREATE TABLE Courses (
     is_elective BOOLEAN DEFAULT FALSE
 ) ENGINE=InnoDB;
 
--- 4) Classes table
--- Purpose: represents a real class section for a course taught by a teacher.
--- Example: "CS-4223 Object-Oriented Design" taught by Teacher A in Semester VIII.
 CREATE TABLE Classes (
     class_id INT AUTO_INCREMENT PRIMARY KEY,
     course_id INT NOT NULL,
@@ -104,9 +65,6 @@ CREATE TABLE Classes (
         ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
--- 5) Schedule table
--- Purpose: stores the timetable for each class.
--- Example: Monday 09:00-11:00 for a specific class.
 CREATE TABLE Schedule (
     schedule_id INT AUTO_INCREMENT PRIMARY KEY,
     class_id INT NOT NULL,
@@ -120,11 +78,6 @@ CREATE TABLE Schedule (
         ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- 6) Enrollments table
--- Purpose: connects a student to a class.
--- This is the core bridge table in the system.
--- One student can enroll in many classes.
--- One class can contain many students.
 CREATE TABLE Enrollments (
     enrollment_id INT AUTO_INCREMENT PRIMARY KEY,
     student_id INT NOT NULL,
@@ -141,10 +94,6 @@ CREATE TABLE Enrollments (
     UNIQUE KEY uq_student_class (student_id, class_id)
 ) ENGINE=InnoDB;
 
--- 7) AttendanceSessions table
--- Purpose: stores active live attendance sessions for a class.
--- When a teacher opens attendance, a six-digit session code is generated.
--- Students must enter the correct session code and their student code.
 CREATE TABLE AttendanceSessions (
     session_id INT AUTO_INCREMENT PRIMARY KEY,
     class_id INT NOT NULL,
@@ -160,10 +109,6 @@ CREATE TABLE AttendanceSessions (
     UNIQUE KEY uq_session_code (session_code)
 ) ENGINE=InnoDB;
 
--- 8) Attendance table
--- Purpose: stores the real daily attendance records.
--- A row means: this student enrolled in this class was marked present/absent on this date.
--- The enrollment_id ensures that the same student can have different attendance records in different classes.
 CREATE TABLE Attendance (
     attendance_id INT AUTO_INCREMENT PRIMARY KEY,
     enrollment_id INT NOT NULL,
@@ -183,150 +128,12 @@ CREATE TABLE Attendance (
     UNIQUE KEY uq_enrollment_date (enrollment_id, attendance_date)
 ) ENGINE=InnoDB;
 
--- 9) AttendanceMonths table
--- Purpose: creates one monthly sheet per class.
--- This helps the teacher manage attendance reporting month by month.
-CREATE TABLE AttendanceMonths (
-    attendance_month_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    class_id INT NOT NULL,
-    month_start DATE NOT NULL,
-    sheet_status ENUM('OPEN', 'SUBMITTED', 'APPROVED') NOT NULL DEFAULT 'OPEN',
-    submitted_at DATETIME NULL,
-    approved_at DATETIME NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (attendance_month_id),
-    UNIQUE KEY uq_attendance_month_class (class_id, month_start),
+CREATE INDEX idx_session_class ON AttendanceSessions(class_id, is_active, expires_at);
+CREATE INDEX idx_attendance_enrollment_date ON Attendance(enrollment_id, attendance_date);
+CREATE INDEX idx_attendance_session ON Attendance(session_id);
+CREATE INDEX idx_enrollment_class ON Enrollments(class_id);
+CREATE INDEX idx_enrollment_student ON Enrollments(student_id);
 
-    CONSTRAINT fk_attendance_month_class
-        FOREIGN KEY (class_id) REFERENCES Classes(class_id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE,
-
-    CONSTRAINT chk_attendance_month_start
-        CHECK (DAYOFMONTH(month_start) = 1)
-) ENGINE=InnoDB;
-
--- 10) MonthlyAttendanceRecords table
--- Purpose: stores month summary counts for each student enrolled in a class.
--- This is a reporting table, not the main source of daily attendance.
--- Only present_days and absent_days are kept here because the app does not need late/leave/payable breakdown in this version.
-CREATE TABLE MonthlyAttendanceRecords (
-    monthly_record_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    attendance_month_id INT UNSIGNED NOT NULL,
-    enrollment_id INT NOT NULL,
-    present_days SMALLINT UNSIGNED NOT NULL DEFAULT 0,
-    absent_days SMALLINT UNSIGNED NOT NULL DEFAULT 0,
-    teacher_remark VARCHAR(255) NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (monthly_record_id),
-    UNIQUE KEY uq_monthly_record_enrollment (attendance_month_id, enrollment_id),
-
-    CONSTRAINT fk_monthly_record_month
-        FOREIGN KEY (attendance_month_id) REFERENCES AttendanceMonths(attendance_month_id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE,
-
-    CONSTRAINT fk_monthly_record_enrollment
-        FOREIGN KEY (enrollment_id) REFERENCES Enrollments(enrollment_id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE,
-
-    CONSTRAINT chk_monthly_record_counts
-        CHECK (
-            present_days >= 0 AND
-            absent_days >= 0
-        )
-) ENGINE=InnoDB;
-
--- View for monthly report output
--- Purpose: gives a teacher-friendly view with student details and the summary values.
-CREATE OR REPLACE VIEW MonthlyAttendanceReport AS
-SELECT
-    am.attendance_month_id,
-    am.class_id,
-    am.month_start,
-    am.sheet_status,
-    mar.monthly_record_id,
-    mar.enrollment_id,
-    s.student_id,
-    s.student_code,
-    s.name_myanmar,
-    mar.present_days,
-    mar.absent_days,
-    mar.teacher_remark
-FROM AttendanceMonths am
-JOIN MonthlyAttendanceRecords mar
-    ON mar.attendance_month_id = am.attendance_month_id
-JOIN Enrollments e
-    ON e.enrollment_id = mar.enrollment_id
-JOIN Students s
-    ON s.student_id = e.student_id;
-
--- Recommended indexes for speed
--- MySQL/MariaDB versions differ here, so check existence before creating them.
-SET @idx_sql = CASE
-    WHEN (SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS
-          WHERE TABLE_SCHEMA = DATABASE()
-            AND TABLE_NAME = 'AttendanceSessions'
-            AND INDEX_NAME = 'idx_attendance_session_class') = 0
-    THEN 'CREATE INDEX idx_attendance_session_class ON AttendanceSessions(class_id, is_active, expires_at)'
-    ELSE 'SELECT 1'
-END;
-PREPARE stmt FROM @idx_sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-SET @idx_sql = CASE
-    WHEN (SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS
-          WHERE TABLE_SCHEMA = DATABASE()
-            AND TABLE_NAME = 'Attendance'
-            AND INDEX_NAME = 'idx_attendance_enrollment_date') = 0
-    THEN 'CREATE INDEX idx_attendance_enrollment_date ON Attendance(enrollment_id, attendance_date)'
-    ELSE 'SELECT 1'
-END;
-PREPARE stmt FROM @idx_sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-SET @idx_sql = CASE
-    WHEN (SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS
-          WHERE TABLE_SCHEMA = DATABASE()
-            AND TABLE_NAME = 'Attendance'
-            AND INDEX_NAME = 'idx_attendance_session_id') = 0
-    THEN 'CREATE INDEX idx_attendance_session_id ON Attendance(session_id)'
-    ELSE 'SELECT 1'
-END;
-PREPARE stmt FROM @idx_sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-SET @idx_sql = CASE
-    WHEN (SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS
-          WHERE TABLE_SCHEMA = DATABASE()
-            AND TABLE_NAME = 'Enrollments'
-            AND INDEX_NAME = 'idx_enrollment_class_id') = 0
-    THEN 'CREATE INDEX idx_enrollment_class_id ON Enrollments(class_id)'
-    ELSE 'SELECT 1'
-END;
-PREPARE stmt FROM @idx_sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-SET @idx_sql = CASE
-    WHEN (SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS
-          WHERE TABLE_SCHEMA = DATABASE()
-            AND TABLE_NAME = 'Enrollments'
-            AND INDEX_NAME = 'idx_enrollment_student_id') = 0
-    THEN 'CREATE INDEX idx_enrollment_student_id ON Enrollments(student_id)'
-    ELSE 'SELECT 1'
-END;
-PREPARE stmt FROM @idx_sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
--- Example seed data
 INSERT INTO Students (student_code, name_myanmar, email, username) VALUES
 ('KPTMYK-001340', 'မောင်ကျော်မောင်မောင်သူ', 'mthu35997@gmail.com', 'kyawmgmgthu'),
 ('KPTMYK-001342', 'မချစ်သက်အိမ်', 'chitthet.eain27@gmail.com', 'chittheteain'),
@@ -367,6 +174,7 @@ INSERT INTO Students (student_code, name_myanmar, email, username) VALUES
 ('KPTMYK-001253', 'မောင်အောင်သူရကျော်', 'thu454909@gmail.com', 'aungthurakyaw'),
 ('KPTMYK-001261', 'မောင်မင်းဆွေညီ', 'minswenyi7@gmail.com', 'minswenyi'),
 ('KPTMYK-001262', 'မမေမြတ်နိုး', 'may634542@gmail.com', 'maymyatnoe');
+
 INSERT INTO Courses (course_code, course_name, is_elective) VALUES
 ('CST-4211', 'Parallel and Distributed Computing', FALSE),
 ('CST-4242', 'Modeling and Simulation', FALSE),

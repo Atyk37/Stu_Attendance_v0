@@ -232,7 +232,7 @@ exports.removeStudentFromClass = async (req, res) => {
 
 exports.getMonthlyAttendance = async (req, res) => {
   const { teacher_id, month } = req.query;
-  const monthStart = month ? `${month}-01` : new Date().toISOString().slice(0, 7) + '-01';
+  const monthStart = month ? `${month}-01` : `${new Date().toISOString().slice(0, 7)}-01`;
   if (!/^\d{4}-\d{2}-01$/.test(monthStart)) return res.status(400).json({ error: 'Month must use YYYY-MM format.' });
 
   try {
@@ -242,43 +242,35 @@ exports.getMonthlyAttendance = async (req, res) => {
     );
     if (ownedClasses.length === 0) return res.status(403).json({ error: 'You can only view attendance for your own classes.' });
 
-    const [monthRows] = await db.query(
-      `INSERT INTO AttendanceMonths (class_id, month_start)
-       VALUES (?, ?)
-       ON DUPLICATE KEY UPDATE attendance_month_id = LAST_INSERT_ID(attendance_month_id)`,
-      [req.params.classId, monthStart]
-    );
-    const attendanceMonthId = monthRows.insertId;
-
-    await db.query(
-      `INSERT IGNORE INTO MonthlyAttendanceRecords (attendance_month_id, enrollment_id)
-       SELECT ?, enrollment_id FROM Enrollments WHERE class_id = ?`,
-      [attendanceMonthId, req.params.classId]
-    );
-
     const [rows] = await db.query(
-      `SELECT s.student_id, s.student_code, s.name_myanmar,
-              mar.monthly_record_id, mar.present_days, mar.absent_days,
-              mar.teacher_remark,
-              DATE_FORMAT(a.attendance_date, '%Y-%m-%d') AS attendance_date_key,
-              DATE_FORMAT(a.attendance_date, '%e/%c') AS attendance_date_label,
-              a.status
-       FROM MonthlyAttendanceRecords mar
-       JOIN Enrollments e ON e.enrollment_id = mar.enrollment_id
+      `SELECT
+         s.student_id,
+         s.student_code,
+         s.name_myanmar,
+         DATE_FORMAT(a.attendance_date, '%Y-%m-%d') AS attendance_date_key,
+         DATE_FORMAT(a.attendance_date, '%e/%c') AS attendance_date_label,
+         a.status
+       FROM Enrollments e
        JOIN Students s ON s.student_id = e.student_id
-       LEFT JOIN AttendanceMonths am ON am.attendance_month_id = mar.attendance_month_id
-       LEFT JOIN Attendance a ON a.enrollment_id = e.enrollment_id
-         AND a.attendance_date >= am.month_start
-         AND a.attendance_date < DATE_ADD(am.month_start, INTERVAL 1 MONTH)
-       WHERE mar.attendance_month_id = ?
+       LEFT JOIN Attendance a
+         ON a.enrollment_id = e.enrollment_id
+        AND a.attendance_date >= ?
+        AND a.attendance_date < DATE_ADD(?, INTERVAL 1 MONTH)
+       WHERE e.class_id = ?
        ORDER BY s.student_code, a.attendance_date`,
-      [attendanceMonthId]
+      [monthStart, monthStart, req.params.classId]
     );
 
-    const attendanceDates = [...new Map(rows.filter((row) => row.attendance_date_key).map((row) => [row.attendance_date_key, row.attendance_date_label])).entries()]
-      .sort(([firstDate], [secondDate]) => firstDate.localeCompare(secondDate))
-      .slice(0, 22);
-    const dateSlots = new Map(attendanceDates.map(([dateKey, dateLabel], index) => [dateKey, { slot: index + 1, label: dateLabel }]));
+    const attendanceDates = [...new Map(
+      rows
+        .filter((row) => row.attendance_date_key)
+        .map((row) => [row.attendance_date_key, row.attendance_date_label])
+    ).entries()].sort(([firstDate], [secondDate]) => firstDate.localeCompare(secondDate));
+
+    const dateSlots = new Map(
+      attendanceDates.map(([dateKey, dateLabel], index) => [dateKey, { slot: index + 1, label: dateLabel }])
+    );
+
     const students = new Map();
     rows.forEach((row) => {
       if (!students.has(row.student_id)) {
@@ -286,25 +278,29 @@ exports.getMonthlyAttendance = async (req, res) => {
           student_id: row.student_id,
           student_code: row.student_code,
           name_myanmar: row.name_myanmar,
-          monthly_record_id: row.monthly_record_id,
           present_days: 0,
           absent_days: 0,
-          teacher_remark: row.teacher_remark,
           days: {},
           attendance_dates: {}
         });
       }
+
       if (row.attendance_date_key && dateSlots.has(row.attendance_date_key)) {
         const student = students.get(row.student_id);
         const dateSlot = dateSlots.get(row.attendance_date_key);
         student.days[dateSlot.slot] = row.status;
         student.attendance_dates[dateSlot.slot] = dateSlot.label;
+
         if (row.status === 'PRESENT') student.present_days += 1;
         if (row.status === 'ABSENT') student.absent_days += 1;
       }
     });
 
-    res.json({ month: monthStart.slice(0, 7), attendance_dates: attendanceDates.map(([, label]) => label), students: [...students.values()] });
+    res.json({
+      month: monthStart.slice(0, 7),
+      attendance_dates: attendanceDates.map(([, label]) => label),
+      students: [...students.values()]
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
