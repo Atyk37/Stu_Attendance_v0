@@ -259,7 +259,7 @@ exports.getMonthlyAttendance = async (req, res) => {
     const [rows] = await db.query(
       `SELECT s.student_id, s.student_code, s.name_myanmar,
               mar.monthly_record_id, mar.present_days, mar.absent_days,
-              mar.late_days, mar.leave_days, mar.payable_days, mar.teacher_remark,
+              mar.teacher_remark,
               DATE_FORMAT(a.attendance_date, '%Y-%m-%d') AS attendance_date_key,
               DATE_FORMAT(a.attendance_date, '%e/%c') AS attendance_date_label,
               a.status
@@ -289,9 +289,6 @@ exports.getMonthlyAttendance = async (req, res) => {
           monthly_record_id: row.monthly_record_id,
           present_days: 0,
           absent_days: 0,
-          late_days: 0,
-          leave_days: 0,
-          payable_days: 0,
           teacher_remark: row.teacher_remark,
           days: {},
           attendance_dates: {}
@@ -304,9 +301,6 @@ exports.getMonthlyAttendance = async (req, res) => {
         student.attendance_dates[dateSlot.slot] = dateSlot.label;
         if (row.status === 'PRESENT') student.present_days += 1;
         if (row.status === 'ABSENT') student.absent_days += 1;
-        if (row.status === 'LATE') student.late_days += 1;
-        if (row.status === 'LEAVE') student.leave_days += 1;
-        if (row.status === 'PRESENT' || row.status === 'LATE') student.payable_days += 1;
       }
     });
 

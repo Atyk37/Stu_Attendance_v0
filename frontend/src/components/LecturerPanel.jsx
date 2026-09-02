@@ -12,7 +12,8 @@ export default function LecturerPanel({ teacher }) {
     try {
       const savedSession = JSON.parse(localStorage.getItem('attendance_active_session'));
       return savedSession?.teacher_id === teacher.teacher_id ? savedSession : null;
-    } catch {
+    } catch {h
+    
       return null;
     }
   });

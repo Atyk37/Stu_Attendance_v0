@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { API_BASE_URL } from '../api';
 
-const statusMark = { PRESENT: 'P', ABSENT: 'A', LATE: 'L', LEAVE: 'LV' };
+const statusMark = { PRESENT: 'P', ABSENT: 'A' };
 
 export default function MonthlyAttendance({ teacher, selectedClassId }) {
   const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7));
@@ -29,9 +29,10 @@ export default function MonthlyAttendance({ teacher, selectedClassId }) {
   const days = sheet ? Array.from({ length: 22 }, (_, index) => index + 1) : [];
   const attendanceSummary = days.map((day) => {
     if (!sheet?.attendance_dates?.[day - 1]) return null;
+    const totalStudents = sheet.students.length;
     const present = sheet.students.filter((student) => student.days[day] === 'PRESENT').length;
-    const lateOrLeave = sheet.students.filter((student) => ['LATE', 'LEAVE'].includes(student.days[day])).length;
-    return { present, absent: Math.max(sheet.students.length - present - lateOrLeave, 0) };
+    const absent = Math.max(totalStudents - present, 0);
+    return { present, absent };
   });
 
   return (
@@ -39,7 +40,7 @@ export default function MonthlyAttendance({ teacher, selectedClassId }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
         <div>
           <h3 style={{ margin: 0 }}>Monthly Attendance Record</h3>
-          <p style={{ marginBottom: 0, color: '#666' }}>Mark: P Present · A Absent · L Late · LV Leave</p>
+          <p style={{ marginBottom: 0, color: '#666' }}>Mark: P Present · A Absent</p>
         </div>
         <label>Month <input type="month" value={month} onChange={(event) => setMonth(event.target.value)} /></label>
       </div>

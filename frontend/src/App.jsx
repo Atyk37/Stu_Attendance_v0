@@ -22,6 +22,12 @@ function TeacherAccess({ onAuthenticated, onBack }) {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Unable to authenticate.');
+      if (mode === 'signup') {
+        setMode('login');
+        setForm({ name: '', email: form.email, password: '' });
+        setFeedback('Account created successfully. Please log in to continue.');
+        return;
+      }
       onAuthenticated(data.teacher);
     } catch (error) {
       setFeedback(error.message);
