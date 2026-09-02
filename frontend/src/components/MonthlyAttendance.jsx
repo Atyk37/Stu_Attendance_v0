@@ -52,6 +52,7 @@ export default function MonthlyAttendance({ teacher, selectedClassId }) {
             <colgroup>
               <col style={{ width: '42px' }} /><col style={{ width: '125px' }} /><col style={{ width: '190px' }} />
               {days.map((day) => <col key={day} style={{ width: '30px' }} />)}
+              <col style={{ width: '65px' }} />
             </colgroup>
             <thead>
               <tr style={{ backgroundColor: '#eef2f4', color: '#1d2933' }}>
@@ -59,6 +60,7 @@ export default function MonthlyAttendance({ teacher, selectedClassId }) {
                 <th rowSpan="2" style={{ padding: '8px', border: '1px solid #9aa5ad' }}>Student ID</th>
                 <th rowSpan="2" style={{ padding: '8px', border: '1px solid #9aa5ad' }}>Student name</th>
                 {days.map((day) => <th key={day} style={{ padding: '8px 2px', border: '1px solid #9aa5ad' }}>{day}</th>)}
+                <th rowSpan="2" style={{ padding: '8px 2px', border: '1px solid #9aa5ad' }}>Total</th>
               </tr>
               <tr style={{ backgroundColor: '#f8fafb', color: '#1d2933' }}>
                 {days.map((day) => <th key={day} style={{ padding: '7px 2px', border: '1px solid #9aa5ad' }}>{sheet.attendance_dates?.[day - 1] || '\u00a0'}</th>)}
@@ -74,23 +76,26 @@ export default function MonthlyAttendance({ teacher, selectedClassId }) {
                     const attendanceValue = student.days[day];
                     return <td key={day} style={{ padding: '8px 2px', border: '1px solid #c8d0d5', color: attendanceValue === 'PRESENT' ? '#198754' : attendanceValue === 'ABSENT' ? '#dc3545' : '#85604', fontWeight: 'bold' }}>{statusMark[attendanceValue] || ''}</td>;
                   })}
+                  <td style={{ padding: '8px 2px', border: '1px solid #c8d0d5', fontWeight: 'bold' }}>{student.present_days || '-'}</td>
                 </tr>
               ))}
               <tr style={{ backgroundColor: '#eef2f4', textAlign: 'center', fontWeight: 'bold' }}>
                 <td colSpan="3" style={{ padding: '8px 4px', border: '1px solid #9aa5ad', textAlign: 'left', color: '#198754' }}>Present Students</td>
                 {attendanceSummary.map((summary, index) => (
                   <td key={index} style={{ padding: '6px 2px', border: '1px solid #9aa5ad', whiteSpace: 'normal' }}>
-                    {summary ? summary.present : ''}
+                    {summary ? (summary.present || '') : ''}
                   </td>
                 ))}
+                <td style={{ padding: '6px 2px', border: '1px solid #9aa5ad' }}></td>
               </tr>
               <tr style={{ backgroundColor: '#fff5f5', textAlign: 'center', fontWeight: 'bold' }}>
                 <td colSpan="3" style={{ padding: '8px 4px', border: '1px solid #9aa5ad', textAlign: 'left', color: '#dc3545' }}>Absent Students</td>
                 {attendanceSummary.map((summary, index) => (
                   <td key={index} style={{ padding: '6px 2px', border: '1px solid #9aa5ad' }}>
-                    {summary ? summary.absent : ''}
+                    {summary ? (summary.absent || '') : ''}
                   </td>
                 ))}
+                <td style={{ padding: '6px 2px', border: '1px solid #9aa5ad' }}>{sheet.students.reduce((total, student) => total + student.absent_days, 0) || ''}</td>
               </tr>
             </tbody>
           </table>
