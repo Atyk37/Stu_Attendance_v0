@@ -4,7 +4,6 @@ USE attendance_system;
 SET FOREIGN_KEY_CHECKS = 0;
 DROP TABLE IF EXISTS Attendance;
 DROP TABLE IF EXISTS AttendanceSessions;
-DROP TABLE IF EXISTS Schedule;
 DROP TABLE IF EXISTS Enrollments;
 DROP TABLE IF EXISTS Classes;
 DROP TABLE IF EXISTS Courses;
@@ -20,7 +19,7 @@ SET FOREIGN_KEY_CHECKS = 1;
       AttendanceSessions -> Classes
       Attendance -> Enrollments
 
-    This keeps the system efficient and removes extra monthly summary tables that are not required for the app flow.
+    This keeps the system efficient and removes extra table layers that are not required for the app flow.
 */
 
 CREATE TABLE Teachers (
@@ -63,19 +62,6 @@ CREATE TABLE Classes (
     CONSTRAINT fk_classes_teacher
         FOREIGN KEY (teacher_id) REFERENCES Teachers(teacher_id)
         ON DELETE SET NULL
-) ENGINE=InnoDB;
-
-CREATE TABLE Schedule (
-    schedule_id INT AUTO_INCREMENT PRIMARY KEY,
-    class_id INT NOT NULL,
-    day_of_week ENUM('MON', 'TUES', 'WED', 'THURS', 'FRI') NOT NULL,
-    start_time TIME NOT NULL,
-    end_time TIME NOT NULL,
-    is_lab BOOLEAN DEFAULT FALSE,
-
-    CONSTRAINT fk_schedule_class
-        FOREIGN KEY (class_id) REFERENCES Classes(class_id)
-        ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 CREATE TABLE Enrollments (
@@ -174,45 +160,6 @@ INSERT INTO Students (student_code, name_myanmar, email, username) VALUES
 ('KPTMYK-001253', 'မောင်အောင်သူရကျော်', 'thu454909@gmail.com', 'aungthurakyaw'),
 ('KPTMYK-001261', 'မောင်မင်းဆွေညီ', 'minswenyi7@gmail.com', 'minswenyi'),
 ('KPTMYK-001262', 'မမေမြတ်နိုး', 'may634542@gmail.com', 'maymyatnoe');
-
-INSERT INTO Courses (course_code, course_name, is_elective) VALUES
-('CST-4211', 'Parallel and Distributed Computing', FALSE),
-('CST-4242', 'Modeling and Simulation', FALSE),
-('CS-4223', 'Object-Oriented Design and Development', FALSE),
-('CS-4214', 'Advanced Artificial Intelligence', TRUE),
-('CS-4225', 'Advanced Database System', FALSE),
-('CS-4216', 'Strategies of Emerging Technology I', TRUE),
-('CST-4257', 'Digital Business and E-Commerce Management', TRUE);
-
-INSERT INTO Classes (course_id, teacher_name) VALUES
-((SELECT course_id FROM Courses WHERE course_code = 'CST-4211'), 'ဒေါ်ပန်းမြတ်မွန်'),
-((SELECT course_id FROM Courses WHERE course_code = 'CST-4242'), 'ဒေါ်ရှင်အိမ်စည်နွယ်'),
-((SELECT course_id FROM Courses WHERE course_code = 'CS-4223'), 'ဒေါက်တာစိုင်းစောဟန်'),
-((SELECT course_id FROM Courses WHERE course_code = 'CS-4214'), 'ဒေါ်သော်တာဦး'),
-((SELECT course_id FROM Courses WHERE course_code = 'CS-4225'), 'ဒေါက်တာရည်မွန်သက်'),
-((SELECT course_id FROM Courses WHERE course_code = 'CS-4216'), 'ဒေါက်တာအေးမြတ်မြတ်ပိုင်'),
-((SELECT course_id FROM Courses WHERE course_code = 'CST-4257'), 'ဒေါ်မြတ်ဆုဦး');
-
-INSERT INTO Schedule (class_id, day_of_week, start_time, end_time, is_lab) VALUES
-((SELECT class_id FROM Classes c JOIN Courses co ON c.course_id = co.course_id WHERE co.course_code = 'CST-4257'), 'MON', '09:00:00', '11:00:00', FALSE),
-((SELECT class_id FROM Classes c JOIN Courses co ON c.course_id = co.course_id WHERE co.course_code = 'CST-4211'), 'MON', '11:00:00', '12:00:00', FALSE),
-((SELECT class_id FROM Classes c JOIN Courses co ON c.course_id = co.course_id WHERE co.course_code = 'CS-4216'), 'MON', '13:00:00', '14:00:00', TRUE),
-((SELECT class_id FROM Classes c JOIN Courses co ON c.course_id = co.course_id WHERE co.course_code = 'CST-4242'), 'MON', '14:00:00', '16:00:00', FALSE),
-((SELECT class_id FROM Classes c JOIN Courses co ON c.course_id = co.course_id WHERE co.course_code = 'CS-4223'), 'TUES', '09:00:00', '11:00:00', TRUE),
-((SELECT class_id FROM Classes c JOIN Courses co ON c.course_id = co.course_id WHERE co.course_code = 'CS-4216'), 'TUES', '11:00:00', '12:00:00', FALSE),
-((SELECT class_id FROM Classes c JOIN Courses co ON c.course_id = co.course_id WHERE co.course_code = 'CST-4257'), 'TUES', '13:00:00', '14:00:00', FALSE),
-((SELECT class_id FROM Classes c JOIN Courses co ON c.course_id = co.course_id WHERE co.course_code = 'CS-4214'), 'TUES', '14:00:00', '15:00:00', FALSE),
-((SELECT class_id FROM Classes c JOIN Courses co ON c.course_id = co.course_id WHERE co.course_code = 'CST-4211'), 'TUES', '15:00:00', '16:00:00', TRUE),
-((SELECT class_id FROM Classes c JOIN Courses co ON c.course_id = co.course_id WHERE co.course_code = 'CS-4225'), 'WED', '09:00:00', '10:00:00', FALSE),
-((SELECT class_id FROM Classes c JOIN Courses co ON c.course_id = co.course_id WHERE co.course_code = 'CS-4223'), 'WED', '10:00:00', '12:00:00', FALSE),
-((SELECT class_id FROM Classes c JOIN Courses co ON c.course_id = co.course_id WHERE co.course_code = 'CST-4242'), 'WED', '13:00:00', '14:00:00', FALSE),
-((SELECT class_id FROM Classes c JOIN Courses co ON c.course_id = co.course_id WHERE co.course_code = 'CS-4225'), 'WED', '14:00:00', '16:00:00', TRUE),
-((SELECT class_id FROM Classes c JOIN Courses co ON c.course_id = co.course_id WHERE co.course_code = 'CS-4214'), 'THURS', '09:00:00', '10:00:00', FALSE),
-((SELECT class_id FROM Classes c JOIN Courses co ON c.course_id = co.course_id WHERE co.course_code = 'CST-4211'), 'THURS', '10:00:00', '12:00:00', FALSE),
-((SELECT class_id FROM Classes c JOIN Courses co ON c.course_id = co.course_id WHERE co.course_code = 'CS-4216'), 'THURS', '14:00:00', '16:00:00', FALSE),
-((SELECT class_id FROM Classes c JOIN Courses co ON c.course_id = co.course_id WHERE co.course_code = 'CST-4257'), 'FRI', '09:00:00', '10:00:00', FALSE),
-((SELECT class_id FROM Classes c JOIN Courses co ON c.course_id = co.course_id WHERE co.course_code = 'CS-4214'), 'FRI', '10:00:00', '12:00:00', TRUE),
-((SELECT class_id FROM Classes c JOIN Courses co ON c.course_id = co.course_id WHERE co.course_code = 'CS-4225'), 'FRI', '13:00:00', '14:00:00', FALSE);
 
 INSERT INTO Enrollments (student_id, class_id)
 SELECT s.student_id, c.class_id

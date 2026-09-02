@@ -1,10 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { API_BASE_URL } from '../api';
+import React from 'react';
 
 export default function Timetable() {
-  const [weeklySchedule, setWeeklySchedule] = useState([]);
-  const [loading, setLoading] = useState(true);
-
   const days = ['MON', 'TUES', 'WED', 'THURS', 'FRI'];
   const timeSlots = [
     { label: '9:00–10:00', startHour: 9, endHour: 10 },
@@ -16,64 +12,46 @@ export default function Timetable() {
     { label: '3:00–4:00', startHour: 15, endHour: 16 },
   ];
 
-  useEffect(() => {
-    // Explicitly target express port to avoid Vite dev server 404
-    fetch(`${API_BASE_URL}/api/student/schedule`)
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
-        }
-        return res.json();
-      })
-      .then((data) => {
-        setWeeklySchedule(Array.isArray(data) ? data : []);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error('Failed to load schedule:', err);
-        setWeeklySchedule([]);
-        setLoading(false);
-      });
-  }, []);
+  const staticSchedule = [
+    { day: 'MON', course_code: 'CST-4257', room_number: 'L 202', startHour: 9, endHour: 10, is_lab: false },
+    { day: 'MON', course_code: 'CST-4257', room_number: 'L 202', startHour: 10, endHour: 11, is_lab: false },
+    { day: 'MON', course_code: 'CST-4211', room_number: 'L 202', startHour: 11, endHour: 12, is_lab: false },
+    { day: 'MON', course_code: 'CS-4216', room_number: 'L 202', startHour: 13, endHour: 14, is_lab: true },
+    { day: 'MON', course_code: 'CST-4242', room_number: 'L 202', startHour: 14, endHour: 15, is_lab: false },
+    { day: 'MON', course_code: 'CST-4242', room_number: 'L 202', startHour: 15, endHour: 16, is_lab: false },
 
-  const getHour = (timeStr) => {
-    if (!timeStr) return -1;
-    // Handles '09:00:00', '13:00', or '1:00:00'
-    const parts = timeStr.toString().trim().split(':');
-    const hour = parseInt(parts[0], 10);
-    return isNaN(hour) ? -1 : hour;
-  };
+    { day: 'TUES', course_code: 'CS-4223', room_number: 'L 202', startHour: 9, endHour: 10, is_lab: true },
+    { day: 'TUES', course_code: 'CS-4223', room_number: 'L 202', startHour: 10, endHour: 11, is_lab: true },
+    { day: 'TUES', course_code: 'CS-4216', room_number: 'L 202', startHour: 11, endHour: 12, is_lab: false },
+    { day: 'TUES', course_code: 'CST-4257', room_number: 'L 202', startHour: 13, endHour: 14, is_lab: false },
+    { day: 'TUES', course_code: 'CS-4214', room_number: 'L 202', startHour: 14, endHour: 15, is_lab: false },
+    { day: 'TUES', course_code: 'CST-4211', room_number: 'L 202', startHour: 15, endHour: 16, is_lab: true },
+
+    { day: 'WED', course_code: 'CS-4225', room_number: 'L 202', startHour: 9, endHour: 10, is_lab: false },
+    { day: 'WED', course_code: 'CS-4223', room_number: 'L 202', startHour: 10, endHour: 11, is_lab: false },
+    { day: 'WED', course_code: 'CS-4223', room_number: 'L 202', startHour: 11, endHour: 12, is_lab: false },
+    { day: 'WED', course_code: 'CST-4242', room_number: 'L 202', startHour: 13, endHour: 14, is_lab: false },
+    { day: 'WED', course_code: 'CS-4225', room_number: 'L 202', startHour: 14, endHour: 15, is_lab: true },
+    { day: 'WED', course_code: 'CS-4225', room_number: 'L 202', startHour: 15, endHour: 16, is_lab: true },
+
+    { day: 'THURS', course_code: 'CS-4214', room_number: 'L 202', startHour: 9, endHour: 10, is_lab: false },
+    { day: 'THURS', course_code: 'CST-4211', room_number: 'L 202', startHour: 10, endHour: 11, is_lab: false },
+    { day: 'THURS', course_code: 'CST-4211', room_number: 'L 202', startHour: 11, endHour: 12, is_lab: false },
+    { day: 'THURS', course_code: 'Activity', room_number: 'L 202', startHour: 13, endHour: 14, is_lab: false },
+    { day: 'THURS', course_code: 'CS-4216', room_number: 'L 202', startHour: 14, endHour: 15, is_lab: false },
+    { day: 'THURS', course_code: 'CS-4216', room_number: 'L 202', startHour: 15, endHour: 16, is_lab: false },
+
+    { day: 'FRI', course_code: 'CST-4257', room_number: 'L 202', startHour: 9, endHour: 10, is_lab: false },
+    { day: 'FRI', course_code: 'CS-4214', room_number: 'L 202', startHour: 10, endHour: 11, is_lab: true },
+    { day: 'FRI', course_code: 'CS-4214', room_number: 'L 202', startHour: 11, endHour: 12, is_lab: true },
+    { day: 'FRI', course_code: 'CS-4225', room_number: 'L 202', startHour: 13, endHour: 14, is_lab: false },
+    { day: 'FRI', course_code: 'Activity', room_number: 'L 202', startHour: 14, endHour: 15, is_lab: false },
+    { day: 'FRI', course_code: 'Activity', room_number: 'L 202', startHour: 15, endHour: 16, is_lab: false }
+  ];
 
   const getCourseForSlot = (day, slot) => {
-    if (!weeklySchedule || weeklySchedule.length === 0) return null;
-
-    return weeklySchedule.find((item) => {
-      if (!item.day_of_week) return false;
-
-      // Normalize day matching (e.g., "MONDAY" -> "MON", "MON" -> "MON")
-      const itemDay = item.day_of_week.trim().toUpperCase();
-      const targetDay = day.trim().toUpperCase();
-      
-      const isDayMatch = itemDay.startsWith(targetDay.slice(0, 3));
-      if (!isDayMatch) return false;
-
-      const itemStartHour = getHour(item.start_time);
-      const itemEndHour = getHour(item.end_time);
-
-      if (itemStartHour === -1 || itemEndHour === -1) return false;
-
-      // Check if slot falls within course timeframe
-      return slot.startHour >= itemStartHour && slot.endHour <= itemEndHour;
-    });
+    return staticSchedule.find((item) => item.day === day && item.startHour === slot.startHour && item.endHour === slot.endHour);
   };
-
-  if (loading) {
-    return (
-      <div style={{ marginTop: '30px', textAlign: 'center', color: '#555' }}>
-        အချိန်စာရင်း ရယူနေပါသည်...
-      </div>
-    );
-  }
 
   return (
     <div className="timetable-page" style={{ marginTop: '25px', fontFamily: 'Segoe UI, sans-serif' }}>

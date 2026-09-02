@@ -113,19 +113,47 @@ exports.getAttendanceHistory = async (req, res) => {
   }
 };
 
-// Fetch weekly schedule
+// Fetch weekly schedule (static UI timetable)
 exports.getSchedule = async (req, res) => {
   try {
-    const sql = `
-      SELECT s.day_of_week, s.start_time, s.end_time, s.is_lab,
-             co.course_code, co.course_name, cl.teacher_name, cl.room_number
-      FROM Schedule s
-      JOIN Classes cl ON s.class_id = cl.class_id
-      JOIN Courses co ON cl.course_id = co.course_id
-      ORDER BY FIELD(s.day_of_week, 'MON', 'TUES', 'WED', 'THURS', 'FRI'), s.start_time;
-    `;
-    const [rows] = await db.query(sql);
-    res.json(rows);
+    const staticSchedule = [
+      { day_of_week: 'MON', start_time: '09:00:00', end_time: '10:00:00', is_lab: false, course_code: 'CST-4257', room_number: 'L 202' },
+      { day_of_week: 'MON', start_time: '10:00:00', end_time: '11:00:00', is_lab: false, course_code: 'CST-4257', room_number: 'L 202' },
+      { day_of_week: 'MON', start_time: '11:00:00', end_time: '12:00:00', is_lab: false, course_code: 'CST-4211', room_number: 'L 202' },
+      { day_of_week: 'MON', start_time: '13:00:00', end_time: '14:00:00', is_lab: true, course_code: 'CS-4216', room_number: 'L 202' },
+      { day_of_week: 'MON', start_time: '14:00:00', end_time: '15:00:00', is_lab: false, course_code: 'CST-4242', room_number: 'L 202' },
+      { day_of_week: 'MON', start_time: '15:00:00', end_time: '16:00:00', is_lab: false, course_code: 'CST-4242', room_number: 'L 202' },
+
+      { day_of_week: 'TUES', start_time: '09:00:00', end_time: '10:00:00', is_lab: true, course_code: 'CS-4223', room_number: 'L 202' },
+      { day_of_week: 'TUES', start_time: '10:00:00', end_time: '11:00:00', is_lab: true, course_code: 'CS-4223', room_number: 'L 202' },
+      { day_of_week: 'TUES', start_time: '11:00:00', end_time: '12:00:00', is_lab: false, course_code: 'CS-4216', room_number: 'L 202' },
+      { day_of_week: 'TUES', start_time: '13:00:00', end_time: '14:00:00', is_lab: false, course_code: 'CST-4257', room_number: 'L 202' },
+      { day_of_week: 'TUES', start_time: '14:00:00', end_time: '15:00:00', is_lab: false, course_code: 'CS-4214', room_number: 'L 202' },
+      { day_of_week: 'TUES', start_time: '15:00:00', end_time: '16:00:00', is_lab: true, course_code: 'CST-4211', room_number: 'L 202' },
+
+      { day_of_week: 'WED', start_time: '09:00:00', end_time: '10:00:00', is_lab: false, course_code: 'CS-4225', room_number: 'L 202' },
+      { day_of_week: 'WED', start_time: '10:00:00', end_time: '11:00:00', is_lab: false, course_code: 'CS-4223', room_number: 'L 202' },
+      { day_of_week: 'WED', start_time: '11:00:00', end_time: '12:00:00', is_lab: false, course_code: 'CS-4223', room_number: 'L 202' },
+      { day_of_week: 'WED', start_time: '13:00:00', end_time: '14:00:00', is_lab: false, course_code: 'CST-4242', room_number: 'L 202' },
+      { day_of_week: 'WED', start_time: '14:00:00', end_time: '15:00:00', is_lab: true, course_code: 'CS-4225', room_number: 'L 202' },
+      { day_of_week: 'WED', start_time: '15:00:00', end_time: '16:00:00', is_lab: true, course_code: 'CS-4225', room_number: 'L 202' },
+
+      { day_of_week: 'THURS', start_time: '09:00:00', end_time: '10:00:00', is_lab: false, course_code: 'CS-4214', room_number: 'L 202' },
+      { day_of_week: 'THURS', start_time: '10:00:00', end_time: '11:00:00', is_lab: false, course_code: 'CST-4211', room_number: 'L 202' },
+      { day_of_week: 'THURS', start_time: '11:00:00', end_time: '12:00:00', is_lab: false, course_code: 'CST-4211', room_number: 'L 202' },
+      { day_of_week: 'THURS', start_time: '13:00:00', end_time: '14:00:00', is_lab: false, course_code: 'CS-4216', room_number: 'L 202' },
+      { day_of_week: 'THURS', start_time: '14:00:00', end_time: '15:00:00', is_lab: false, course_code: 'CS-4216', room_number: 'L 202' },
+      { day_of_week: 'THURS', start_time: '15:00:00', end_time: '16:00:00', is_lab: false, course_code: 'CS-4216', room_number: 'L 202' },
+
+      { day_of_week: 'FRI', start_time: '09:00:00', end_time: '10:00:00', is_lab: false, course_code: 'CST-4257', room_number: 'L 202' },
+      { day_of_week: 'FRI', start_time: '10:00:00', end_time: '11:00:00', is_lab: true, course_code: 'CS-4214', room_number: 'L 202' },
+      { day_of_week: 'FRI', start_time: '11:00:00', end_time: '12:00:00', is_lab: true, course_code: 'CS-4214', room_number: 'L 202' },
+      { day_of_week: 'FRI', start_time: '13:00:00', end_time: '14:00:00', is_lab: false, course_code: 'CS-4225', room_number: 'L 202' },
+      { day_of_week: 'FRI', start_time: '14:00:00', end_time: '15:00:00', is_lab: false, course_code: 'CS-4225', room_number: 'L 202' },
+      { day_of_week: 'FRI', start_time: '15:00:00', end_time: '16:00:00', is_lab: false, course_code: 'CS-4225', room_number: 'L 202' }
+    ];
+
+    res.json(staticSchedule);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
