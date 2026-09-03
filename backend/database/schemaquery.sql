@@ -121,6 +121,19 @@ CREATE INDEX idx_enrollment_class ON Enrollments(class_id);
 CREATE INDEX idx_enrollment_student ON Enrollments(student_id);
 
 INSERT INTO Students (student_code, name_myanmar, email, username) VALUES
+('KPTMYK-001157', 'မအိန္ဒြာမြင့်မြတ်သူ', 'eaindraymyat093@gmail.com', 'eaindraymyatmyanthu'),
+('KPTMYK-001160', 'မယဉ်သူဇာလွင်', 'yinthuzar1160@gmail.com', 'yinthuzarlwin'),
+('KPTMYK-001172', 'မမွန်မွန်စိုး', 'monmonsoe689@gmail.com', 'monmonsoe'),
+('KPTMYK-001198', 'မနှင်းနန္ဒာထွေး', 'hninnandarhtwe2003@gmail.com', 'hninnandarhtwe'),
+('KPTMYK-001207', 'မောင်အောင်ဆန်းဦး', 'aungsan.aung171@gmail.com', 'aungsanoo'),
+('KPTMYK-001225', 'မကဆုန်မေ', 'kasonemay085@gmail.com', 'kasonemay'),
+('KPTMYK-001241', 'မယွန်းမိမိဇော်', 'yoonmizaw344@gmail.com', 'yoonmimizaw'),
+('KPTMYK-001244', 'မဇူးမိမိဖြိုး', 'zuemimiphyo969@gmail.com', 'zuemimiphyo'),
+('KPTMYK-001248', 'မပုလဲသွယ်', 'pearlthwe2023@gmail.com', 'pearlthwe'),
+('KPTMYK-001251', 'မဖြိုးသိင်္ဃီကျော်', 'phyotheingikyaw3124@gmail.com', 'phyotheingikyaw'),
+('KPTMYK-001253', 'မောင်အောင်သူရကျော်', 'thu454909@gmail.com', 'aungthurakyaw'),
+('KPTMYK-001261', 'မောင်မင်းဆွေညီ', 'minswenyi7@gmail.com', 'minswenyi'),
+('KPTMYK-001262', 'မမေမြတ်နိုး', 'may634542@gmail.com', 'maymyatnoe'),
 ('KPTMYK-001340', 'မောင်ကျော်မောင်မောင်သူ', 'mthu35997@gmail.com', 'kyawmgmgthu'),
 ('KPTMYK-001342', 'မချစ်သက်အိမ်', 'chitthet.eain27@gmail.com', 'chittheteain'),
 ('KPTMYK-001343', 'မဆုရတနာစိုး', 'lilyhsuyadanasoe@gmail.com', 'hsuyadanasoe'),
@@ -146,20 +159,7 @@ INSERT INTO Students (student_code, name_myanmar, email, username) VALUES
 ('KPTMYK-001376', 'မောင်နန္ဒထွန်း', 'nanda345tun@gmail.com', 'nandatun'),
 ('KPTMYK-001377', 'မောင်လင်းလတ်ဖြိုး', 'linlitphyo2000@gmail.com', 'linlitphyo'),
 ('KPTMYK-001378', 'မကေသဇင်ဖူး', 'maythazinp237@gmail.com', 'kaythazinphoo'),
-('KPTMYK-001381', 'မဆုမြတ်သဇင်', 'hsumyatthazin124@gmail.com', 'hsumyatthazin'),
-('KPTMYK-001157', 'မအိန္ဒြာမြတ်မွန်သူ', 'eaindraymyat093@gmail.com', 'eaindraymyatmyanthu'),
-('KPTMYK-001160', 'မယဉ်သူဇာလွင်', 'yinthuzar1160@gmail.com', 'yinthuzarlwin'),
-('KPTMYK-001172', 'မမွန်မွန်စိုး', 'monmonsoe689@gmail.com', 'monmonsoe'),
-('KPTMYK-001198', 'မနှင်းနန္ဒာထွေး', 'hninnandarhtwe2003@gmail.com', 'hninnandarhtwe'),
-('KPTMYK-001207', 'မောင်အောင်ဆန်းဦး', 'aungsan.aung171@gmail.com', 'aungsanoo'),
-('KPTMYK-001225', 'မကဆုန်မေ', 'kasonemay085@gmail.com', 'kasonemay'),
-('KPTMYK-001241', 'မယွန်းမိမိဇော်', 'yoonmizaw344@gmail.com', 'yoonmimizaw'),
-('KPTMYK-001244', 'မဇူးမိမိဖြိုး', 'zuemimiphyo969@gmail.com', 'zuemimiphyo'),
-('KPTMYK-001248', 'မပုလဲသွယ်', 'pearlthwe2023@gmail.com', 'pearlthwe'),
-('KPTMYK-001251', 'မဖြိုးသိင်္ဃီကျော်', 'phyotheingikyaw3124@gmail.com', 'phyotheingikyaw'),
-('KPTMYK-001253', 'မောင်အောင်သူရကျော်', 'thu454909@gmail.com', 'aungthurakyaw'),
-('KPTMYK-001261', 'မောင်မင်းဆွေညီ', 'minswenyi7@gmail.com', 'minswenyi'),
-('KPTMYK-001262', 'မမေမြတ်နိုး', 'may634542@gmail.com', 'maymyatnoe');
+('KPTMYK-001381', 'မဆုမြတ်သဇင်', 'hsumyatthazin124@gmail.com', 'hsumyatthazin');
 
 INSERT INTO Enrollments (student_id, class_id)
 SELECT s.student_id, c.class_id
