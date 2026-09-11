@@ -132,7 +132,7 @@ export default function App() {
       <header className="site-header">
         <div className="brand-block">
           <h2>Polytechnic University (Myeik) — Attendance Portal</h2>
-          <p>Simple, reliable attendance management for every class.</p>
+          <p>Simple, reliable attendance management for classes .</p>
         </div>
         <div className="site-nav">
           <button 
