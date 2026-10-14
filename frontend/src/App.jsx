@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import LecturerPanel from './components/LecturerPanel';
 import StudentPanel from './components/StudentPanel';
-import Timetable from './components/Timetable';
+// import Timetable from './components/Timetable';
 import TeacherProfile from './components/TeacherProfile';
 import { API_BASE_URL } from './api';
-import './app.css';
 
 function TeacherAccess({ onAuthenticated, onBack }) {
   const [mode, setMode] = useState('login');
@@ -35,22 +34,57 @@ function TeacherAccess({ onAuthenticated, onBack }) {
   };
 
   return (
-    <div style={{ maxWidth: '440px', margin: '40px auto', padding: '24px', backgroundColor: '#fff', border: '1px solid #ddd', borderRadius: '6px' }}>
-      <h3>{mode === 'login' ? 'Teacher Login' : 'Create Teacher Account'}</h3>
-      <p style={{ color: '#666' }}>Sign in to access the lecturer panel.</p>
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        {mode === 'signup' && <input type="text" placeholder="Full name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />}
-        <input type="email" placeholder="Teacher email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
-        <input type="password" placeholder="Password (at least 6 characters)" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} minLength="6" required />
-        <button type="submit" style={{ padding: '12px', backgroundColor: '#0056b3', color: '#fff', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>
+    <div className="mx-auto max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <h3 className="text-2xl font-bold text-slate-800">{mode === 'login' ? 'Teacher Login' : 'Create Teacher Account'}</h3>
+      <p className="mt-2 text-sm text-slate-600">Sign in to access the lecturer panel.</p>
+      <form onSubmit={handleSubmit} className="mt-5 flex flex-col gap-3">
+        {mode === 'signup' && (
+          <input
+            type="text"
+            placeholder="Full name"
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            required
+            className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          />
+        )}
+        <input
+          type="email"
+          placeholder="Teacher email"
+          value={form.email}
+          onChange={(e) => setForm({ ...form, email: e.target.value })}
+          required
+          className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+        />
+        <input
+          type="password"
+          placeholder="Password (at least 6 characters)"
+          value={form.password}
+          onChange={(e) => setForm({ ...form, password: e.target.value })}
+          minLength="6"
+          required
+          className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+        />
+        <button
+          type="submit"
+          className="mt-1 rounded-xl bg-blue-700 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800"
+        >
           {mode === 'login' ? 'Log In' : 'Sign Up'}
         </button>
       </form>
-      {feedback && <p style={{ color: '#dc3545', fontWeight: 'bold' }}>{feedback}</p>}
-      <button type="button" onClick={() => setMode(mode === 'login' ? 'signup' : 'login')} style={{ marginTop: '16px', border: 'none', background: 'none', color: '#0056b3', cursor: 'pointer' }}>
+      {feedback && <p className="mt-4 text-sm font-semibold text-red-600">{feedback}</p>}
+      <button
+        type="button"
+        onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
+        className="mt-4 text-sm font-medium text-blue-700 underline-offset-2 hover:underline"
+      >
         {mode === 'login' ? 'Need an account? Sign up' : 'Already have an account? Log in'}
       </button>
-      <button type="button" onClick={onBack} style={{ display: 'block', marginTop: '10px', border: 'none', background: 'none', color: '#6c757d', cursor: 'pointer' }}>
+      <button
+        type="button"
+        onClick={onBack}
+        className="mt-3 block text-sm text-slate-500 hover:text-slate-700"
+      >
         Back to Student Panel
       </button>
     </div>
@@ -128,22 +162,30 @@ export default function App() {
   };
 
   return (
-    <div className="app-shell">
-      <header className="site-header">
-        <div className="brand-block">
-          <h2>Polytechnic University (Myeik) — Attendance Portal</h2>
-          <p>Simple, reliable attendance management for classes .</p>
+    <div className="mx-auto min-h-screen w-full max-w-7xl px-4 py-7 sm:px-6 lg:px-8">
+      <header className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white/90 p-5 shadow-sm backdrop-blur-sm md:flex-row md:items-center md:justify-between">
+        <div>
+          <h2 className="text-xl font-bold tracking-tight text-slate-800 sm:text-2xl">Polytechnic University (Myeik) — Attendance Portal</h2>
+          <p className="mt-1 text-sm text-slate-600">Simple, reliable attendance management for classes.</p>
         </div>
-        <div className="site-nav">
-          <button 
-            onClick={() => changeView('student')} 
-            style={{ padding: '8px 16px', marginRight: '8px', backgroundColor: viewRole === 'student' ? '#0056b3' : '#e0e0e0', color: viewRole === 'student' ? '#fff' : '#333', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+        <div className="flex flex-wrap items-center gap-2 md:justify-end">
+          <button
+            onClick={() => changeView('student')}
+            className={
+              viewRole === 'student'
+                ? 'rounded-xl bg-blue-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800'
+                : 'rounded-xl bg-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-300'
+            }
           >
             Student Panel
           </button>
           <button
             onClick={() => changeView(teacher ? 'lecturer' : 'teacher-access')}
-            style={{ padding: '8px 16px', backgroundColor: viewRole === 'lecturer' || viewRole === 'teacher-access' ? '#0056b3' : '#e0e0e0', color: viewRole === 'lecturer' || viewRole === 'teacher-access' ? '#fff' : '#333', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+            className={
+              viewRole === 'lecturer' || viewRole === 'teacher-access'
+                ? 'rounded-xl bg-blue-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800'
+                : 'rounded-xl bg-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-300'
+            }
           >
             Lecturer Mode
           </button>
@@ -151,16 +193,16 @@ export default function App() {
         </div>
       </header>
 
-      <main className="app-content">
+      <main className="mt-7 grid gap-6">
         {viewRole === 'teacher-access' ? (
-        <TeacherAccess onAuthenticated={handleAuthenticated} onBack={() => changeView('student')} />
+          <TeacherAccess onAuthenticated={handleAuthenticated} onBack={() => changeView('student')} />
         ) : viewRole === 'lecturer' ? (
-        <LecturerPanel teacher={teacher} />
+          <LecturerPanel teacher={teacher} />
         ) : (
-        <>
-          <StudentPanel />
-          <Timetable />
-        </>
+          <>
+            <StudentPanel />
+            {/* <Timetable /> */}
+          </>
         )}
       </main>
     </div>

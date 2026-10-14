@@ -3,6 +3,7 @@ import { API_BASE_URL } from '../api';
 
 export default function StudentEnrollmentManager({ teacher, selectedClassId }) {
   const [students, setStudents] = useState([]);
+  const [mode, setMode] = useState('enroll');
   const [newStudent, setNewStudent] = useState({ student_code: '', name_myanmar: '', email: '', username: '' });
   const [feedback, setFeedback] = useState(null);
   const [loading, setLoading] = useState(false);  
@@ -38,20 +39,24 @@ export default function StudentEnrollmentManager({ teacher, selectedClassId }) {
     }
   };
 
-  const handleRegisterStudent = async (event) => {
+  const handleStudentSubmit = async (event) => {
     event.preventDefault();
     setFeedback(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/lecturer/classes/${selectedClassId}/students/register`, {
+      const isNewStudent = mode === 'register';
+      const endpoint = isNewStudent ? 'register' : '';
+      const response = await fetch(`${API_BASE_URL}/api/lecturer/classes/${selectedClassId}/students${endpoint ? `/${endpoint}` : ''}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ teacher_id: teacher.teacher_id, ...newStudent })
+        body: JSON.stringify(isNewStudent
+          ? { teacher_id: teacher.teacher_id, ...newStudent }
+          : { teacher_id: teacher.teacher_id, student_code: newStudent.student_code })
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Unable to register student.');
+      if (!response.ok) throw new Error(data.error || (isNewStudent ? 'Unable to register student.' : 'Unable to enroll student.'));
       setStudents((currentStudents) => [...currentStudents, data.student].sort((a, b) => a.student_code.localeCompare(b.student_code)));
       setNewStudent({ student_code: '', name_myanmar: '', email: '', username: '' });
-      setFeedback({ success: true, message: `${data.student.student_code} was registered and added.` });
+      setFeedback({ success: true, message: isNewStudent ? `${data.student.student_code} was registered and added.` : `${data.student.student_code} was added to this course.` });
     } catch (error) {
       setFeedback({ success: false, message: error.message });
     }
@@ -60,45 +65,132 @@ export default function StudentEnrollmentManager({ teacher, selectedClassId }) {
   if (!selectedClassId) return <p style={{ marginTop: '20px', color: '#666' }}>Select one of your courses to manage students.</p>;
 
   return (
-    <section className="enrollment-page" style={{ marginTop: '30px', padding: '20px', backgroundColor: '#fff', border: '1px solid #ddd', borderRadius: '6px' }}>
-      <h3 style={{ marginTop: 0 }}>Add New Student</h3>
-      <p style={{ marginTop: 0, color: '#666' }}>Create a student account and add it to this course.</p>
-      <form onSubmit={handleRegisterStudent} style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '12px' }}>
-        <input type="text" value={newStudent.student_code} onChange={(event) => setNewStudent({ ...newStudent, student_code: event.target.value })} placeholder="Student code" aria-label="Student code" required />
-        <input type="text" value={newStudent.name_myanmar} onChange={(event) => setNewStudent({ ...newStudent, name_myanmar: event.target.value })} placeholder="Student name" required />
-        <input type="email" value={newStudent.email} onChange={(event) => setNewStudent({ ...newStudent, email: event.target.value })} placeholder="Student email" required />
-        <input type="text" value={newStudent.username} onChange={(event) => setNewStudent({ ...newStudent, username: event.target.value })} placeholder="Student username" required />
-        <button type="submit" style={{ gridColumn: '1 / -1', padding: '11px 16px', backgroundColor: '#28a745', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>Add Student to Course</button>
+    <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <h3 className="mt-0 text-xl font-bold text-slate-800">
+        {mode === 'enroll' ? 'Add Existing Student' : 'Register New Student'}
+      </h3>
+      <p className="mt-0 text-sm text-slate-600">
+        {mode === 'enroll' ? 'Enter the student code of an existing student account.' : 'Create a student account and add it to this course.'}
+      </p>
+
+      <div className="mb-3 flex gap-2">
+        <button
+          type="button"
+          onClick={() => { setMode('enroll'); setFeedback(null); }}
+          className={`rounded-lg px-3 py-2 text-sm font-semibold ${mode === 'enroll' ? 'bg-blue-700 text-white' : 'bg-slate-200 text-slate-700'}`}
+        >
+          Existing Student
+        </button>
+        <button
+          type="button"
+          onClick={() => { setMode('register'); setFeedback(null); }}
+          className={`rounded-lg px-3 py-2 text-sm font-semibold ${mode === 'register' ? 'bg-blue-700 text-white' : 'bg-slate-200 text-slate-700'}`}
+        >
+          New Student
+        </button>
+      </div>
+
+      <form onSubmit={handleStudentSubmit} className="grid gap-3 md:grid-cols-2">
+        <input
+          type="text"
+          value={newStudent.student_code}
+          onChange={(event) => setNewStudent({ ...newStudent, student_code: event.target.value })}
+          placeholder="Student code"
+          aria-label="Student code"
+          className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 md:col-span-2"
+          required
+        />
+        {mode === 'register' && (
+          <>
+            <input
+              type="text"
+              value={newStudent.name_myanmar}
+              onChange={(event) => setNewStudent({ ...newStudent, name_myanmar: event.target.value })}
+              placeholder="Student name"
+              className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              required
+            />
+            <input
+              type="email"
+              value={newStudent.email}
+              onChange={(event) => setNewStudent({ ...newStudent, email: event.target.value })}
+              placeholder="Student email"
+              className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              required
+            />
+            <input
+              type="text"
+              value={newStudent.username}
+              onChange={(event) => setNewStudent({ ...newStudent, username: event.target.value })}
+              placeholder="Student username"
+              className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 md:col-span-2"
+              required
+            />
+          </>
+        )}
+        <button
+          type="submit"
+          className="rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-emerald-700 md:col-span-2"
+        >
+          {mode === 'enroll' ? 'Add Existing Student to Course' : 'Register and Add Student'}
+        </button>
       </form>
-      {feedback && <p style={{ color: feedback.success ? '#28a745' : '#dc3545', fontWeight: 'bold' }}>{feedback.message}</p>}
+
+      {feedback && (
+        <p className={`mt-3 text-sm font-bold ${feedback.success ? 'text-emerald-600' : 'text-red-600'}`}>
+          {feedback.message}
+        </p>
+      )}
+
       <button
         type="button"
         onClick={() => setShowStudents(true)}
-        style={{ marginTop: '16px', width: '100%', padding: '11px 16px', backgroundColor: '#0056b3', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+        className="mt-4 w-full rounded-xl bg-blue-700 px-4 py-3 text-sm font-bold text-white transition hover:bg-blue-800"
       >
         View Enrolled Students ({students.length})
       </button>
 
       {showStudents && (
         <div
-          className="enrollment-modal-backdrop"
+          className="fixed inset-0 z-10 flex items-center justify-center bg-slate-900/45 p-5"
           role="dialog"
           aria-modal="true"
           aria-labelledby="enrolled-students-title"
           onClick={(event) => event.target === event.currentTarget && setShowStudents(false)}
-          style={{ position: 'fixed', inset: 0, zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', backgroundColor: 'rgba(0, 0, 0, 0.45)' }}
         >
-          <div className="enrollment-modal" style={{ width: 'min(680px, 100%)', maxHeight: '80vh', overflowY: 'auto', padding: '20px', backgroundColor: '#fff', borderRadius: '6px', boxShadow: '0 8px 30px rgba(0, 0, 0, 0.25)' }}>
-            <div className="enrollment-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', marginBottom: '12px' }}>
-              <h3 id="enrolled-students-title" style={{ margin: 0 }}>Enrolled Students ({students.length})</h3>
-              <button type="button" onClick={() => setShowStudents(false)} aria-label="Close enrolled students" className="modal-close-button" style={{ padding: '6px 12px', backgroundColor: '#6c757d', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>×</button>
+          <div className="max-h-[80vh] w-full max-w-[680px] overflow-y-auto rounded-2xl bg-white p-5 shadow-2xl">
+            <div className="mb-3 flex items-center justify-between gap-4">
+              <h3 id="enrolled-students-title" className="m-0 text-xl font-bold text-slate-800">
+                Enrolled Students ({students.length})
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowStudents(false)}
+                aria-label="Close enrolled students"
+                className="h-9 w-9 rounded-full border border-slate-300 bg-slate-100 text-xl text-slate-700 transition hover:bg-slate-200"
+              >
+                ×
+              </button>
             </div>
-            {loading ? <p>Loading students...</p> : students.length === 0 ? <p style={{ color: '#666' }}>No students enrolled in this course.</p> : (
-              <div style={{ display: 'grid', gap: '8px' }}>
+
+            {loading ? (
+              <p className="text-sm text-slate-600">Loading students...</p>
+            ) : students.length === 0 ? (
+              <p className="text-sm text-slate-600">No students enrolled in this course.</p>
+            ) : (
+              <div className="grid gap-2">
                 {students.map((student) => (
-                  <div className="enrolled-student-row" key={student.student_id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', padding: '10px', borderBottom: '1px solid #eee' }}>
-                    <span><strong>{student.student_code}</strong> - {student.name_myanmar}</span>
-                    <button type="button" onClick={() => handleRemoveStudent(student)} style={{ padding: '6px 10px', backgroundColor: '#dc3545', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Remove</button>
+                  <div key={student.student_id} className="flex items-center justify-between gap-3 rounded-xl border-b border-slate-200 px-2 py-3">
+                    <span className="text-sm text-slate-700">
+                      <strong>{student.student_code}</strong> - {student.name_myanmar}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveStudent(student)}
+                      className="rounded-lg bg-red-600 px-2.5 py-1.5 text-xs font-bold text-white transition hover:bg-red-700"
+                    >
+                      Remove
+                    </button>
                   </div>
                 ))}
               </div>

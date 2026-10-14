@@ -36,70 +36,94 @@ export default function MonthlyAttendance({ teacher, selectedClassId }) {
   });
 
   return (
-    <section className="monthly-page" style={{ marginTop: '30px', padding: '20px', backgroundColor: '#fff', border: '1px solid #ddd', borderRadius: '6px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+    <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <h3 style={{ margin: 0 }}>Monthly Attendance Record</h3>
-          <p style={{ marginBottom: 0, color: '#666' }}>Mark: P Present · A Absent</p>
+          <h3 className="text-xl font-bold text-slate-800">Monthly Attendance Record</h3>
+          <p className="text-sm text-slate-600">Mark: P Present · A Absent</p>
         </div>
-        <label>Month <input type="month" value={month} onChange={(event) => setMonth(event.target.value)} /></label>
+        <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+          Month
+          <input
+            type="month"
+            value={month}
+            onChange={(event) => setMonth(event.target.value)}
+            className="rounded-lg border border-slate-300 bg-slate-50 px-2 py-1.5 text-sm text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          />
+        </label>
       </div>
-      {loading && <p>Loading monthly record...</p>}
-      {error && <p style={{ color: '#dc3545', fontWeight: 'bold' }}>{error}</p>}
+
+      {loading && <p className="mt-4 text-sm text-slate-600">Loading monthly record...</p>}
+      {error && <p className="mt-4 text-sm font-bold text-red-600">{error}</p>}
+
       {sheet && !loading && (
-        <div style={{ overflowX: 'auto', marginTop: '16px' }}>
-          <table style={{ borderCollapse: 'collapse', minWidth: '1180px', width: '100%', tableLayout: 'fixed', fontSize: '12px' }}>
+        <div className="mt-4 overflow-x-auto">
+          <table className="min-w-[1180px] w-full table-fixed border-collapse text-[12px]">
             <colgroup>
-              <col style={{ width: '42px' }} /><col style={{ width: '125px' }} /><col style={{ width: '190px' }} />
-              {days.map((day) => <col key={day} style={{ width: '30px' }} />)}
-              <col style={{ width: '65px' }} />
+              <col className="w-[42px]" />
+              <col className="w-[125px]" />
+              <col className="w-[190px]" />
+              {days.map((day) => <col key={day} className="w-[30px]" />)}
+              <col className="w-[65px]" />
             </colgroup>
             <thead>
-              <tr style={{ backgroundColor: '#eef2f4', color: '#1d2933' }}>
-                <th rowSpan="2" style={{ padding: '8px', border: '1px solid #9aa5ad' }}>No.</th>
-                <th rowSpan="2" style={{ padding: '8px', border: '1px solid #9aa5ad' }}>Student ID</th>
-                <th rowSpan="2" style={{ padding: '8px', border: '1px solid #9aa5ad' }}>Student name</th>
-                {days.map((day) => <th key={day} style={{ padding: '8px 2px', border: '1px solid #9aa5ad' }}>{day}</th>)}
-                <th rowSpan="2" style={{ padding: '8px 2px', border: '1px solid #9aa5ad' }}>Total</th>
+              <tr className="bg-slate-100 text-slate-700">
+                <th rowSpan="2" className="border border-slate-300 p-2">No.</th>
+                <th rowSpan="2" className="border border-slate-300 p-2">Student ID</th>
+                <th rowSpan="2" className="border border-slate-300 p-2">Student name</th>
+                {days.map((day) => (
+                  <th key={day} className="border border-slate-300 p-2">{day}</th>
+                ))}
+                <th rowSpan="2" className="border border-slate-300 p-2">Total</th>
               </tr>
-              <tr style={{ backgroundColor: '#f8fafb', color: '#1d2933' }}>
-                {days.map((day) => <th key={day} style={{ padding: '7px 2px', border: '1px solid #9aa5ad' }}>{sheet.attendance_dates?.[day - 1] || '\u00a0'}</th>)}
+              <tr className="bg-slate-50 text-slate-700">
+                {days.map((day) => (
+                  <th key={day} className="border border-slate-300 p-2">{sheet.attendance_dates?.[day - 1] || '\u00a0'}</th>
+                ))}
               </tr>
             </thead>
             <tbody>
               {sheet.students.map((student, index) => (
-                <tr key={student.student_id} style={{ borderBottom: '1px solid #c8d0d5', textAlign: 'center' }}>
-                  <td style={{ padding: '8px 3px', border: '1px solid #c8d0d5' }}>{index + 1}</td>
-                  <td style={{ padding: '8px 4px', border: '1px solid #c8d0d5', textAlign: 'left', whiteSpace: 'nowrap' }}><strong>{student.student_code}</strong></td>
-                  <td style={{ padding: '8px 6px', border: '1px solid #c8d0d5', textAlign: 'left' }}>{student.name_myanmar}</td>
+                <tr key={student.student_id} className="border-b border-slate-200 text-center">
+                  <td className="border border-slate-200 p-2">{index + 1}</td>
+                  <td className="border border-slate-200 p-2 text-left whitespace-nowrap"><strong>{student.student_code}</strong></td>
+                  <td className="border border-slate-200 p-2 text-left">{student.name_myanmar}</td>
                   {days.map((day) => {
                     const attendanceValue = student.days[day];
-                    return <td key={day} style={{ padding: '8px 2px', border: '1px solid #c8d0d5', color: attendanceValue === 'PRESENT' ? '#198754' : attendanceValue === 'ABSENT' ? '#dc3545' : '#85604', fontWeight: 'bold' }}>{statusMark[attendanceValue] || ''}</td>;
+                    return (
+                      <td
+                        key={day}
+                        className={`border border-slate-200 p-2 font-bold ${attendanceValue === 'PRESENT' ? 'text-emerald-600' : attendanceValue === 'ABSENT' ? 'text-red-600' : 'text-amber-600'}`}
+                      >
+                        {statusMark[attendanceValue] || ''}
+                      </td>
+                    );
                   })}
-                  <td style={{ padding: '8px 2px', border: '1px solid #c8d0d5', fontWeight: 'bold' }}>{student.present_days || '-'}</td>
+                  <td className="border border-slate-200 p-2 font-bold">{student.present_days || '-'}</td>
                 </tr>
               ))}
-              <tr style={{ backgroundColor: '#eef2f4', textAlign: 'center', fontWeight: 'bold' }}>
-                <td colSpan="3" style={{ padding: '8px 4px', border: '1px solid #9aa5ad', textAlign: 'left', color: '#198754' }}>Present Students</td>
+
+              <tr className="bg-emerald-50 text-center font-bold text-emerald-700">
+                <td colSpan="3" className="border border-slate-300 p-2 text-left">Present Students</td>
                 {attendanceSummary.map((summary, index) => (
-                  <td key={index} style={{ padding: '6px 2px', border: '1px solid #9aa5ad', whiteSpace: 'normal' }}>
-                    {summary ? (summary.present || '') : ''}
+                  <td key={index} className="border border-slate-300 p-2">
+                    {summary ? summary.present || '' : ''}
                   </td>
                 ))}
-                <td style={{ padding: '6px 2px', border: '1px solid #9aa5ad' }}></td>
+                <td className="border border-slate-300 p-2"></td>
               </tr>
-              <tr style={{ backgroundColor: '#fff5f5', textAlign: 'center', fontWeight: 'bold' }}>
-                <td colSpan="3" style={{ padding: '8px 4px', border: '1px solid #9aa5ad', textAlign: 'left', color: '#dc3545' }}>Absent Students</td>
+              <tr className="bg-red-50 text-center font-bold text-red-700">
+                <td colSpan="3" className="border border-slate-300 p-2 text-left">Absent Students</td>
                 {attendanceSummary.map((summary, index) => (
-                  <td key={index} style={{ padding: '6px 2px', border: '1px solid #9aa5ad' }}>
-                    {summary ? (summary.absent || '') : ''}
+                  <td key={index} className="border border-slate-300 p-2">
+                    {summary ? summary.absent || '' : ''}
                   </td>
                 ))}
-                <td style={{ padding: '6px 2px', border: '1px solid #9aa5ad' }}>{sheet.students.reduce((total, student) => total + student.absent_days, 0) || ''}</td>
+                <td className="border border-slate-300 p-2">{sheet.students.reduce((total, student) => total + student.absent_days, 0) || ''}</td>
               </tr>
             </tbody>
           </table>
-          {sheet.students.length === 0 && <p>No students are enrolled in this course.</p>}
+          {sheet.students.length === 0 && <p className="mt-3 text-sm text-slate-600">No students are enrolled in this course.</p>}
         </div>
       )}
     </section>

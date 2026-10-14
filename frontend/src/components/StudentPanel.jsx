@@ -28,49 +28,52 @@ export default function StudentPanel() {
   };
 
   return (
-    <div className="student-page" style={{ marginTop: '20px' }}>
-      <div style={{ padding: '20px', backgroundColor: '#fff', borderRadius: '6px', border: '1px solid #ddd', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-        <h3>Submit Class Attendance</h3>
-        <form onSubmit={handleSubmitAttendance} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <input 
-            type="text" 
-            placeholder="Student Code (e.g., KPTMYK-001253)" 
-            value={inputStudentCode} 
+    <div className="mt-5">
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+        <h3 className="mb-4 text-2xl font-bold text-slate-800">Submit Class Attendance</h3>
+        <form onSubmit={handleSubmitAttendance} className="flex flex-col gap-3">
+          <input
+            type="text"
+            placeholder="Student Code (e.g., KPTMYK-001253)"
+            value={inputStudentCode}
             onChange={(e) => setInputStudentCode(e.target.value)}
-            style={{ padding: '10px', fontSize: '15px' }}
-            required 
+            className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            required
           />
           <input
             type="text"
             placeholder="Course code (e.g., CST-4301)"
             value={inputCourseCode}
             onChange={(e) => setInputCourseCode(e.target.value)}
-            style={{ padding: '10px', fontSize: '15px' }}
+            className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             required
           />
-          <input 
-            type="text" 
+          <input
+            type="text"
             placeholder="6-Digit Session Code"
-            value={inputSessionCode} 
+            value={inputSessionCode}
             onChange={(e) => setInputSessionCode(e.target.value)}
             inputMode="numeric"
             maxLength="6"
             pattern="[0-9]{6}"
-            style={{ padding: '10px', fontSize: '15px' }}
-            required 
+            className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            required
           />
-          <button type="submit" disabled={isSubmitting} style={{ padding: '12px', backgroundColor: '#0056b3', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '16px', fontWeight: 'bold', cursor: isSubmitting ? 'wait' : 'pointer' }}>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="rounded-xl bg-blue-700 px-4 py-3 text-base font-bold text-white transition hover:bg-blue-800 disabled:cursor-wait disabled:bg-blue-500"
+          >
             {isSubmitting ? 'Submitting...' : 'Submit Attendance'}
           </button>
         </form>
 
         {submitFeedback && (
-          <p style={{ marginTop: '15px', fontWeight: 'bold', color: submitFeedback.success ? '#28a745' : '#dc3545' }}>
+          <p className={`mt-4 text-sm font-bold ${submitFeedback.success ? 'text-emerald-600' : 'text-red-600'}`}>
             {submitFeedback.message}
           </p>
         )}
       </div>
-
     </div>
   );
 }

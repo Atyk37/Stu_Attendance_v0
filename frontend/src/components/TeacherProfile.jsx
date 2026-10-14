@@ -4,17 +4,26 @@ export default function TeacherProfile({ teacher, onLogout }) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div style={{ position: 'relative' }}>
-      <button type="button" onClick={() => setIsOpen(!isOpen)} aria-label="Open teacher profile" style={{ width: '42px', height: '42px', borderRadius: '50%', border: '2px solid #0056b3', backgroundColor: '#e3f2fd', color: '#0056b3', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer' }}>
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        aria-label="Open teacher profile"
+        className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-blue-700 bg-blue-100 text-lg font-bold text-blue-700 transition hover:bg-blue-200"
+      >
         {teacher.name?.charAt(0).toUpperCase()}
       </button>
 
       {isOpen && (
-        <section style={{ position: 'absolute', top: '52px', right: 0, zIndex: 10, width: '280px', padding: '18px', backgroundColor: '#fff', border: '1px solid #ddd', borderRadius: '6px', boxShadow: '0 4px 14px rgba(0,0,0,0.15)' }}>
-          <h3 style={{ marginTop: 0, marginBottom: '4px' }}>Teacher Profile</h3>
-          <p style={{ margin: '8px 0', fontWeight: 'bold' }}>{teacher.name}</p>
-          <p style={{ margin: '8px 0', color: '#666', fontSize: '13px' }}>{teacher.email}</p>
-          <button type="button" onClick={onLogout} style={{ width: '100%', marginTop: '10px', padding: '9px', backgroundColor: '#6c757d', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
+        <section className="absolute right-0 top-14 z-10 w-72 rounded-2xl border border-slate-200 bg-white p-4 shadow-xl">
+          <h3 className="mb-2 text-lg font-bold text-slate-800">Teacher Profile</h3>
+          <p className="my-2 font-bold text-slate-800">{teacher.name}</p>
+          <p className="my-2 text-xs text-slate-600">{teacher.email}</p>
+          <button
+            type="button"
+            onClick={onLogout}
+            className="mt-2 w-full rounded-lg bg-slate-700 px-3 py-2 text-sm font-bold text-white transition hover:bg-slate-800"
+          >
             Log Out
           </button>
         </section>

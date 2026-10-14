@@ -1,6 +1,8 @@
 const db = require('../config/db');
 
 const generateSessionCode = () => Math.floor(100000 + Math.random() * 900000).toString();
+const semesterNames = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX'];
+const studyYears = ['First Year', 'Second Year', 'Third Year', 'Fourth Year', 'Final Year'];
 
 exports.signup = async (req, res) => {
   const { name, email, password } = req.body;
@@ -42,9 +44,11 @@ exports.getClasses = async (req, res) => {
   if (!teacher_id) return res.status(400).json({ error: 'Teacher identity is required.' });
   try {
     const sql = `
-      SELECT cl.class_id, co.course_code, co.course_name, cl.teacher_name, cl.room_number
+      SELECT cl.class_id, co.course_code, co.course_name, t.name AS teacher_name,
+             cl.academic_year, cl.semester
       FROM Classes cl
       JOIN Courses co ON cl.course_id = co.course_id
+      JOIN Teachers t ON cl.teacher_id = t.teacher_id
       WHERE cl.teacher_id = ?
       ORDER BY co.course_code ASC;
     `;
@@ -56,9 +60,19 @@ exports.getClasses = async (req, res) => {
 };
 
 exports.createCourse = async (req, res) => {
-  const { teacher_id, course_code, course_name, is_elective = false, room_number = 'L 202', academic_year = '2025-2026', semester = 'Semester VIII' } = req.body;
+  const { teacher_id, course_code, course_name, is_elective = false, academic_year = 'First Year', semester = 'Semester I' } = req.body;
   if (!teacher_id || !course_code?.trim() || !course_name?.trim()) {
     return res.status(400).json({ error: 'Teacher, course code, and course name are required.' });
+  }
+  const yearIndex = typeof academic_year === 'string' ? studyYears.indexOf(academic_year) : -1;
+  const semesterIndex = typeof semester === 'string'
+    ? semesterNames.findIndex((roman) => semester === `Semester ${roman}`) + 1
+    : 0;
+  const validSemesters = yearIndex === 4
+    ? [9]
+    : [yearIndex * 2 + 1, yearIndex * 2 + 2];
+  if (yearIndex === -1 || !validSemesters.includes(semesterIndex)) {
+    return res.status(400).json({ error: 'Choose a valid study year and semester.' });
   }
 
   const connection = await db.getConnection();
@@ -69,12 +83,11 @@ exports.createCourse = async (req, res) => {
       [course_code.trim().toUpperCase(), course_name.trim(), Boolean(is_elective)]
     );
     const [classResult] = await connection.query(
-      `INSERT INTO Classes (course_id, teacher_id, teacher_name, room_number, academic_year, semester)
-       SELECT ?, teacher_id, name, ?, ?, ? FROM Teachers WHERE teacher_id = ?`,
-      [courseResult.insertId, room_number, academic_year, semester, teacher_id]
+      `INSERT INTO Classes (course_id, teacher_id, academic_year, semester)
+       SELECT ?, teacher_id, ?, ? FROM Teachers WHERE teacher_id = ?`,
+      [courseResult.insertId, academic_year, semester, teacher_id]
     );
     if (classResult.affectedRows === 0) throw new Error('Teacher account not found.');
-    await connection.query('INSERT INTO Enrollments (student_id, class_id) SELECT student_id, ? FROM Students', [classResult.insertId]);
     await connection.commit();
     res.status(201).json({ success: true, class_id: classResult.insertId, course_id: courseResult.insertId });
   } catch (err) {

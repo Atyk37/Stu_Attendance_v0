@@ -3,21 +3,43 @@ import StudentEnrollmentManager from './StudentEnrollmentManager';
 import MonthlyAttendance from './MonthlyAttendance';
 import { API_BASE_URL } from '../api';
 
+const semesterNames = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX'];
+const studyYears = ['First Year', 'Second Year', 'Third Year', 'Fourth Year', 'Final Year'];
+
+const getYearNumber = (year) => {
+  const yearIndex = studyYears.indexOf(year);
+  if (yearIndex !== -1) return yearIndex + 1;
+
+  const legacyYear = /^Year ([1-5])$/.exec(year || '');
+  return legacyYear ? Number(legacyYear[1]) : 1;
+};
+
+const formatStudyYear = (year) => {
+  const legacyYear = /^Year ([1-5])$/.exec(year || '');
+  return legacyYear ? studyYears[Number(legacyYear[1]) - 1] : year;
+};
+
+const getSemestersForYear = (year) => {
+  const firstSemester = (getYearNumber(year) - 1) * 2;
+  const semesterCount = getYearNumber(year) === 5 ? 1 : 2;
+  return semesterNames.slice(firstSemester, firstSemester + semesterCount).map((roman, index) => ({
+    value: String(firstSemester + index + 1),
+    label: `Semester ${roman}`
+  }));
+};
+
 export default function LecturerPanel({ teacher }) {
   const [classList, setClassList] = useState([]);
-  const [selectedClassId, setSelectedClassId] = useState(() => {
-    return localStorage.getItem('attendance_selected_class') || '';
-  });
+  const [selectedClassId, setSelectedClassId] = useState('');
   const [activeSession, setActiveSession] = useState(() => {
     try {
       const savedSession = JSON.parse(localStorage.getItem('attendance_active_session'));
       return savedSession?.teacher_id === teacher.teacher_id ? savedSession : null;
-    } catch {h
-    
+    } catch {
       return null;
     }
   });
-  const [courseForm, setCourseForm] = useState({ course_code: '', course_name: '', is_elective: false, room_number: 'L 202', academic_year: '2025-2026', semester: 'Semester VIII' });
+  const [courseForm, setCourseForm] = useState({ course_code: '', course_name: '', is_elective: false, academic_year: 'First Year', semester: 'Semester I' });
   const [courseFeedback, setCourseFeedback] = useState(null);
   const [deletingClassId, setDeletingClassId] = useState(null);
   const [sessionFeedback, setSessionFeedback] = useState(null);
@@ -26,10 +48,29 @@ export default function LecturerPanel({ teacher }) {
   const [attendanceHistory, setAttendanceHistory] = useState([]);
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/api/lecturer/classes?teacher_id=${teacher.teacher_id}`)
-      .then((res) => res.json())
-      .then((data) => setClassList(data))
-      .catch((err) => console.error(err));
+    const loadClasses = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/lecturer/classes?teacher_id=${teacher.teacher_id}`);
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Unable to load your courses.');
+        if (!Array.isArray(data)) throw new Error('The server returned an invalid course list.');
+
+        setClassList(data);
+        const savedClassId = localStorage.getItem('attendance_selected_class') || '';
+        const savedClassIsOwned = data.some((course) => String(course.class_id) === savedClassId);
+        if (savedClassIsOwned) {
+          setSelectedClassId(savedClassId);
+        } else {
+          localStorage.removeItem('attendance_selected_class');
+          setSelectedClassId('');
+        }
+      } catch (error) {
+        console.error(error);
+        setCourseFeedback({ success: false, message: error.message });
+      }
+    };
+
+    loadClasses();
   }, [teacher.teacher_id]);
 
   const handleCreateCourse = async (event) => {
@@ -54,7 +95,7 @@ export default function LecturerPanel({ teacher }) {
       if (!response.ok) throw new Error(data.error || 'Unable to create course.');
 
       setCourseFeedback({ success: true, message: 'Course created successfully.' });
-      setCourseForm({ course_code: '', course_name: '', is_elective: false, room_number: 'L 202', academic_year: '2025-2026', semester: 'Semester VIII' });
+      setCourseForm({ course_code: '', course_name: '', is_elective: false, academic_year: 'First Year', semester: 'Semester I' });
       const classesResponse = await fetch(`${API_BASE_URL}/api/lecturer/classes?teacher_id=${teacher.teacher_id}`);
       setClassList(await classesResponse.json());
     } catch (error) {
@@ -137,30 +178,99 @@ export default function LecturerPanel({ teacher }) {
   };
 
   return (
-    <div className="lecturer-page" style={{ marginTop: '20px', padding: '20px', backgroundColor: '#f8f9fa', borderRadius: '6px', border: '1px solid #ccc' }}>
-      <h3>Lecturer Session Controller</h3>
-      <div className="course-management-grid">
-        <div className="course-card" style={{ marginBottom: '25px', padding: '20px', backgroundColor: '#fff', borderRadius: '6px', border: '1px solid #ddd' }}>
-          <h3>Create Your Course</h3>
-          <form onSubmit={handleCreateCourse} style={{ display: 'grid', gap: '12px' }}>
-            <input type="text" placeholder="Course code (e.g. CST-4301)" value={courseForm.course_code} onChange={(e) => setCourseForm({ ...courseForm, course_code: e.target.value })} required />
-            <input type="text" placeholder="Course name" value={courseForm.course_name} onChange={(e) => setCourseForm({ ...courseForm, course_name: e.target.value })} required />
-            <input type="text" placeholder="Room number" value={courseForm.room_number} onChange={(e) => setCourseForm({ ...courseForm, room_number: e.target.value })} required />
-            <label><input type="checkbox" checked={courseForm.is_elective} onChange={(e) => setCourseForm({ ...courseForm, is_elective: e.target.checked })} /> Elective course</label>
-            <button type="submit" style={{ padding: '10px 20px', backgroundColor: '#0056b3', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>Create Course</button>
+    <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
+      <h3 className="mb-5 text-2xl font-bold text-slate-800">Lecturer Session Controller</h3>
+
+      <div className="grid gap-5 md:grid-cols-2">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h3 className="mb-4 text-xl font-bold text-slate-800">Create Your Course</h3>
+          <form onSubmit={handleCreateCourse} className="grid gap-3">
+            <input
+              type="text"
+              placeholder="Course code (e.g. CST-4301)"
+              value={courseForm.course_code}
+              onChange={(e) => setCourseForm({ ...courseForm, course_code: e.target.value })}
+              className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              required
+            />
+            <input
+              type="text"
+              placeholder="Course name"
+              value={courseForm.course_name}
+              onChange={(e) => setCourseForm({ ...courseForm, course_name: e.target.value })}
+              className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              required
+            />
+            <label className="grid gap-1 text-sm font-medium text-slate-700">
+              Study year
+              <select
+                value={courseForm.academic_year}
+                onChange={(e) => setCourseForm({
+                  ...courseForm,
+                  academic_year: e.target.value,
+                  semester: getSemestersForYear(e.target.value)[0].label
+                })}
+                className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                required
+              >
+                {studyYears.map((year) => (
+                  <option key={year} value={year}>{year}</option>
+                ))}
+              </select>
+            </label>
+            <label className="grid gap-1 text-sm font-medium text-slate-700">
+              Semester
+              <select
+                value={courseForm.semester}
+                onChange={(e) => setCourseForm({ ...courseForm, semester: e.target.value })}
+                className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                required
+              >
+                {getSemestersForYear(courseForm.academic_year).map((semester) => (
+                  <option key={semester.value} value={semester.label}>{semester.label}</option>
+                ))}
+              </select>
+            </label>
+            <label className="flex items-center gap-2 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                checked={courseForm.is_elective}
+                onChange={(e) => setCourseForm({ ...courseForm, is_elective: e.target.checked })}
+                className="h-4 w-4 accent-blue-600"
+              />
+              Elective course
+            </label>
+            <button
+              type="submit"
+              className="rounded-xl bg-blue-700 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-blue-800"
+            >
+              Create Course
+            </button>
           </form>
-          {courseFeedback && <p style={{ color: courseFeedback.success ? '#28a745' : '#dc3545', fontWeight: 'bold' }}>{courseFeedback.message}</p>}
+          {courseFeedback && (
+            <p className={`mt-3 text-sm font-bold ${courseFeedback.success ? 'text-emerald-600' : 'text-red-600'}`}>
+              {courseFeedback.message}
+            </p>
+          )}
         </div>
-        <div className="course-card" style={{ marginBottom: '25px', padding: '20px', backgroundColor: '#fff', borderRadius: '6px', border: '1px solid #ddd' }}>
-          <h3>Your Courses</h3>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h3 className="mb-4 text-xl font-bold text-slate-800">Your Courses</h3>
           {classList.length === 0 ? (
-            <p style={{ color: '#666' }}>You have not created any courses yet.</p>
+            <p className="text-sm text-slate-600">You have not created any courses yet.</p>
           ) : (
-            <div style={{ display: 'grid', gap: '10px' }}>
+            <div className="grid gap-3">
               {classList.map((course) => (
-                <div key={course.class_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '12px', border: '1px solid #ddd', borderRadius: '4px' }}>
-                  <span><strong>{course.course_code}</strong> - {course.course_name} ({course.room_number})</span>
-                  <button type="button" onClick={() => handleDeleteCourse(course)} disabled={deletingClassId === course.class_id} style={{ padding: '8px 12px', backgroundColor: '#dc3545', color: '#fff', border: 'none', borderRadius: '4px', cursor: deletingClassId === course.class_id ? 'wait' : 'pointer', fontWeight: 'bold' }}>
+                <div key={course.class_id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  <span className="text-sm text-slate-700">
+                    <strong>{course.course_code}</strong> - {course.course_name} ({formatStudyYear(course.academic_year)}, {course.semester})
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteCourse(course)}
+                    disabled={deletingClassId === course.class_id}
+                    className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-red-700 disabled:cursor-wait disabled:bg-red-400"
+                  >
                     {deletingClassId === course.class_id ? 'Deleting...' : 'Delete'}
                   </button>
                 </div>
@@ -169,15 +279,16 @@ export default function LecturerPanel({ teacher }) {
           )}
         </div>
       </div>
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
-        <select 
-          value={selectedClassId} 
+
+      <div className="mt-5 flex flex-col gap-3 md:flex-row">
+        <select
+          value={selectedClassId}
           onChange={(e) => {
             setSelectedClassId(e.target.value);
             localStorage.setItem('attendance_selected_class', e.target.value);
             setSessionFeedback(null);
           }}
-          style={{ padding: '10px', flex: 1, fontSize: '15px' }}
+          className="flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
         >
           <option value="">-- Select Course --</option>
           {classList.map((c) => (
@@ -186,72 +297,38 @@ export default function LecturerPanel({ teacher }) {
             </option>
           ))}
         </select>
-        
+
         {!activeSession ? (
-          <button onClick={handleStartSession} disabled={sessionLoading} style={{ padding: '10px 20px', backgroundColor: '#28a745', color: '#fff', border: 'none', borderRadius: '4px', cursor: sessionLoading ? 'wait' : 'pointer', fontWeight: 'bold' }}>
+          <button
+            onClick={handleStartSession}
+            disabled={sessionLoading}
+            className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-700 disabled:cursor-wait disabled:bg-emerald-400"
+          >
             {sessionLoading ? 'Generating Code...' : 'Open Attendance Code'}
           </button>
         ) : (
-          <button onClick={handleCloseSession} disabled={sessionLoading} style={{ padding: '10px 20px', backgroundColor: '#dc3545', color: '#fff', border: 'none', borderRadius: '4px', cursor: sessionLoading ? 'wait' : 'pointer', fontWeight: 'bold' }}>
+          <button
+            onClick={handleCloseSession}
+            disabled={sessionLoading}
+            className="rounded-xl bg-red-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-red-700 disabled:cursor-wait disabled:bg-red-400"
+          >
             {sessionLoading ? 'Ending Session...' : 'End Session'}
           </button>
         )}
       </div>
 
-      {sessionFeedback && <p style={{ color: '#dc3545', fontWeight: 'bold' }}>{sessionFeedback.message}</p>}
+      {sessionFeedback && <p className="mt-3 text-sm font-bold text-red-600">{sessionFeedback.message}</p>}
 
       {activeSession && (
-        <div style={{ textAlign: 'center', backgroundColor: '#e3f2fd', padding: '20px', borderRadius: '8px', border: '2px dashed #0056b3' }}>
-          <h4 style={{ margin: 0, color: '#0056b3' }}>LIVE ATTENDANCE CODE</h4>
-          <h1 style={{ fontSize: '52px', letterSpacing: '10px', margin: '10px 0', color: '#28a745' }}>{activeSession.session_code}</h1>
-          <p style={{ margin: 0, color: '#555' }}>Provide this code to class members to mark PRESENT.</p>
+        <div className="mt-5 rounded-2xl border-2 border-dashed border-blue-500 bg-blue-50 p-5 text-center">
+          <h4 className="text-sm font-bold uppercase tracking-[0.2em] text-blue-700">LIVE ATTENDANCE CODE</h4>
+          <h1 className="my-3 text-5xl font-black tracking-[0.5rem] text-emerald-600">{activeSession.session_code}</h1>
+          <p className="text-sm text-slate-600">Provide this code to class members to mark PRESENT.</p>
         </div>
       )}
 
       <StudentEnrollmentManager teacher={teacher} selectedClassId={selectedClassId} />
       <MonthlyAttendance teacher={teacher} selectedClassId={selectedClassId} />
-
-      {/* <div style={{ marginTop: '30px', padding: '20px', backgroundColor: '#fff', borderRadius: '6px', border: '1px solid #ddd' }}>
-        <h3>Search Attendance Records</h3>
-        <form onSubmit={handleQueryHistory} style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-          <input
-            type="text"
-            placeholder="Enter Student Code (e.g. KPTMYK-001253)"
-            value={searchHistoryCode}
-            onChange={(e) => setSearchHistoryCode(e.target.value)}
-            style={{ padding: '10px', flex: 1 }}
-            required
-          />
-          <button type="submit" style={{ padding: '10px 20px', backgroundColor: '#6c757d', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
-            Search
-          </button>
-        </form>
-
-        {attendanceHistory.length > 0 && (
-          <table style={{ width: '100%', borderCollapse: 'collapse', backgroundColor: '#fff', marginTop: '10px' }}>
-            <thead>
-              <tr style={{ backgroundColor: '#343a40', color: '#fff', textAlign: 'left' }}>
-                <th style={{ padding: '10px' }}>Date</th>
-                <th style={{ padding: '10px' }}>Course</th>
-                <th style={{ padding: '10px' }}>Teacher</th>
-                <th style={{ padding: '10px' }}>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {attendanceHistory.map((row, idx) => (
-                <tr key={idx} style={{ borderBottom: '1px solid #ddd' }}>
-                  <td style={{ padding: '10px' }}>{new Date(row.attendance_date).toLocaleDateString()}</td>
-                  <td style={{ padding: '10px', fontWeight: 'bold' }}>{row.course_code}</td>
-                  <td style={{ padding: '10px' }}>{row.teacher_name}</td>
-                  <td style={{ padding: '10px', fontWeight: 'bold', color: row.status === 'PRESENT' ? '#28a745' : '#dc3545' }}>
-                    {row.status}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div> */}
     </div>
   );
 }

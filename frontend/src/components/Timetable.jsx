@@ -54,51 +54,27 @@ export default function Timetable() {
   };
 
   return (
-    <div className="timetable-page" style={{ marginTop: '25px', fontFamily: 'Segoe UI, sans-serif' }}>
-      {/* Header Info */}
-      <div style={{ textAlign: 'center', marginBottom: '15px' }}>
-        <h4 style={{ margin: '0 0 4px 0', color: '#0056b3' }}>
+    <div className="mt-6 font-sans">
+      <div className="mb-4 text-center">
+        <h4 className="mb-1 text-base font-bold uppercase tracking-wide text-blue-700">
           POLYTECHNIC UNIVERSITY (MYEIK), FACULTY OF COMPUTING
         </h4>
-        <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#333' }}>
+        <div className="text-sm font-bold text-slate-700">
           B.C.Sc. Time Table (2025–2026 Academic Year)
         </div>
       </div>
 
-      {/* Main Timetable Matrix */}
-      <div style={{ overflowX: 'auto' }}>
-        <table
-          style={{
-            width: '100%',
-            borderCollapse: 'collapse',
-            textAlign: 'center',
-            fontSize: '13px',
-            backgroundColor: '#fff',
-            boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
-            border: '1px solid #aaa',
-          }}
-        >
+      <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <table className="w-full border-collapse text-center text-[13px]">
           <thead>
-            <tr style={{ backgroundColor: '#f0f4f8', borderBottom: '2px solid #aaa' }}>
-              <th
-                style={{
-                  padding: '10px',
-                  border: '1px solid #ccc',
-                  backgroundColor: '#e6edf5',
-                  width: '90px',
-                }}
-              >
+            <tr className="border-b-2 border-slate-300 bg-slate-100">
+              <th className="w-[90px] border border-slate-300 bg-slate-200 p-2.5 font-semibold text-slate-700">
                 Day / Time
               </th>
               {timeSlots.map((slot, idx) => (
                 <th
                   key={idx}
-                  style={{
-                    padding: '8px',
-                    border: '1px solid #ccc',
-                    fontSize: slot.isLunch ? '12px' : '13px',
-                    backgroundColor: slot.isLunch ? '#ffeebd' : '#e6edf5',
-                  }}
+                  className={`border border-slate-300 p-2 text-[13px] ${slot.isLunch ? 'bg-amber-100 text-amber-800' : 'bg-slate-200 text-slate-700'}`}
                 >
                   {slot.label}
                 </th>
@@ -108,19 +84,10 @@ export default function Timetable() {
           <tbody>
             {days.map((day, dIdx) => (
               <tr key={dIdx}>
-                {/* Day Name */}
-                <td
-                  style={{
-                    padding: '12px 8px',
-                    fontWeight: 'bold',
-                    border: '1px solid #ccc',
-                    backgroundColor: '#f9f9f9',
-                  }}
-                >
+                <td className="border border-slate-300 bg-slate-50 p-3 font-bold text-slate-700">
                   {day}
                 </td>
 
-                {/* Time Slots */}
                 {timeSlots.map((slot, sIdx) => {
                   if (slot.isLunch) {
                     if (dIdx === 0) {
@@ -128,16 +95,7 @@ export default function Timetable() {
                         <td
                           key={sIdx}
                           rowSpan={days.length}
-                          style={{
-                            border: '1px solid #ccc',
-                            backgroundColor: '#fff9e6',
-                            color: '#856404',
-                            fontWeight: 'bold',
-                            writingMode: 'vertical-rl',
-                            textTransform: 'uppercase',
-                            letterSpacing: '3px',
-                            padding: '10px 0',
-                          }}
+                          className="border border-slate-300 bg-amber-50 p-2 font-bold uppercase tracking-[0.2em] text-amber-700 [writing-mode:vertical-rl]"
                         >
                           LUNCH BREAK
                         </td>
@@ -149,28 +107,19 @@ export default function Timetable() {
                   const match = getCourseForSlot(day, slot);
 
                   return (
-                    <td
-                      key={sIdx}
-                      style={{
-                        padding: '8px',
-                        border: '1px solid #ccc',
-                        verticalAlign: 'middle',
-                      }}
-                    >
+                    <td key={sIdx} className="border border-slate-300 p-2 align-middle">
                       {match ? (
                         <div>
-                          <div style={{ fontWeight: 'bold', color: '#0056b3' }}>
+                          <div className="font-bold text-blue-700">
                             {match.course_code}{' '}
-                            {match.is_lab ? <span style={{ color: '#d9534f' }}>(Lab)</span> : ''}
+                            {match.is_lab ? <span className="text-red-600">(Lab)</span> : ''}
                           </div>
                           {match.room_number && (
-                            <div style={{ fontSize: '11px', color: '#666', marginTop: '2px' }}>
-                              {match.room_number}
-                            </div>
+                            <div className="mt-1 text-[11px] text-slate-600">{match.room_number}</div>
                           )}
                         </div>
                       ) : (
-                        <span style={{ color: '#ccc' }}>Activity</span>
+                        <span className="text-slate-300">Activity</span>
                       )}
                     </td>
                   );

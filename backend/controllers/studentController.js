@@ -63,9 +63,9 @@ exports.submitAttendance = async (req, res) => {
       }
 
       await connection.query(
-        `INSERT INTO Attendance (enrollment_id, attendance_date, status)
-         VALUES (?, CURDATE(), 'PRESENT')`,
-        [enrollmentId]
+        `INSERT INTO Attendance (enrollment_id, session_id, attendance_date, status)
+         VALUES (?, ?, CURDATE(), 'PRESENT')`,
+        [enrollmentId, activeSession.session_id]
       );
       await connection.commit();
     } catch (error) {
@@ -90,13 +90,14 @@ exports.getAttendanceHistory = async (req, res) => {
       SELECT 
         st.student_code, st.name_myanmar,
         co.course_code, co.course_name,
-        cl.teacher_name, cl.room_number,
+        t.name AS teacher_name, cl.academic_year, cl.semester,
         COALESCE(a.attendance_date, CURDATE()) AS attendance_date, 
         COALESCE(a.status, 'ABSENT') AS status
       FROM Students st
       INNER JOIN Enrollments e ON st.student_id = e.student_id
       INNER JOIN Classes cl ON e.class_id = cl.class_id
       INNER JOIN Courses co ON cl.course_id = co.course_id
+      INNER JOIN Teachers t ON cl.teacher_id = t.teacher_id
       LEFT JOIN Attendance a ON e.enrollment_id = a.enrollment_id
       WHERE st.student_code = ?
       ORDER BY a.attendance_date DESC;
