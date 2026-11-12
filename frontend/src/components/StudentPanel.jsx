@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { API_BASE_URL } from '../api';
 
-export default function StudentPanel() {
-  const [inputStudentCode, setInputStudentCode] = useState('');
+export default function StudentPanel({ student }) {
+  const [inputStudentCode, setInputStudentCode] = useState(student?.student_code || '');
   const [inputCourseCode, setInputCourseCode] = useState('');
   const [inputSessionCode, setInputSessionCode] = useState('');
   const [submitFeedback, setSubmitFeedback] = useState(null);

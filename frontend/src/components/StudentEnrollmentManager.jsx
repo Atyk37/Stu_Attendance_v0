@@ -158,7 +158,7 @@ export default function StudentEnrollmentManager({ teacher, selectedClassId }) {
           aria-labelledby="enrolled-students-title"
           onClick={(event) => event.target === event.currentTarget && setShowStudents(false)}
         >
-          <div className="max-h-[80vh] w-full max-w-[680px] overflow-y-auto rounded-2xl bg-white p-5 shadow-2xl">
+          <div className="max-h-[80vh] w-full max-w-170 overflow-y-auto rounded-2xl bg-white p-5 shadow-2xl">
             <div className="mb-3 flex items-center justify-between gap-4">
               <h3 id="enrolled-students-title" className="m-0 text-xl font-bold text-slate-800">
                 Enrolled Students ({students.length})

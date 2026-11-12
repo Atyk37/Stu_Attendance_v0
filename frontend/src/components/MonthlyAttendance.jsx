@@ -58,13 +58,13 @@ export default function MonthlyAttendance({ teacher, selectedClassId }) {
 
       {sheet && !loading && (
         <div className="mt-4 overflow-x-auto">
-          <table className="min-w-[1180px] w-full table-fixed border-collapse text-[12px]">
+          <table className="min-w-295 w-full table-fixed border-collapse text-[12px]">
             <colgroup>
-              <col className="w-[42px]" />
-              <col className="w-[125px]" />
-              <col className="w-[190px]" />
-              {days.map((day) => <col key={day} className="w-[30px]" />)}
-              <col className="w-[65px]" />
+              <col className="w-10.5" />
+              <col className="w-31.25" />
+              <col className="w-47.5" />
+              {days.map((day) => <col key={day} className="w-7.5" />)}
+              <col className="w-16.25" />
             </colgroup>
             <thead>
               <tr className="bg-slate-100 text-slate-700">

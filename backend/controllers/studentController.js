@@ -1,4 +1,38 @@
 const db = require('../config/db');
+const { verifyPassword } = require('../utils/password');
+
+exports.signup = (_req, res) => res.status(403).json({
+  success: false,
+  message: 'Student accounts are created by an administrator. Please contact your school admin.'
+});
+
+exports.login = async (req, res) => {
+  const { email, student_code, password } = req.body;
+  const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+  const normalizedCode = typeof student_code === 'string' ? student_code.replace(/\s+/g, '').toUpperCase() : '';
+  if (!normalizedEmail || !normalizedCode || typeof password !== 'string' || !password) {
+    return res.status(400).json({ success: false, message: 'Email, student code, and password are required.' });
+  }
+
+  try {
+    const [rows] = await db.query(
+      `SELECT students.student_id, students.student_code, accounts.name, accounts.email, accounts.password
+       FROM StudentAccounts accounts
+       JOIN Students students ON students.student_id = accounts.student_id
+       WHERE accounts.email = ? AND students.student_code = ?`,
+      [normalizedEmail, normalizedCode]
+    );
+    if (rows.length === 0 || !(await verifyPassword(password, rows[0].password))) {
+      return res.status(401).json({ success: false, message: 'Invalid email, student code, or password.' });
+    }
+    const student = { ...rows[0] };
+    delete student.password;
+    res.json({ success: true, student });
+  } catch (error) {
+    console.error('Student login failed:', error);
+    res.status(500).json({ success: false, message: 'Unable to sign in right now.' });
+  }
+};
 
 // Submit live attendance code
 exports.submitAttendance = async (req, res) => {

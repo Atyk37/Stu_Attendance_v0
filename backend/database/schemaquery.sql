@@ -5,9 +5,11 @@ SET FOREIGN_KEY_CHECKS = 0;
 DROP TABLE IF EXISTS Attendance;
 DROP TABLE IF EXISTS AttendanceSessions;
 DROP TABLE IF EXISTS Enrollments;
+DROP TABLE IF EXISTS StudentAccounts;
 DROP TABLE IF EXISTS Classes;
 DROP TABLE IF EXISTS Courses;
 DROP TABLE IF EXISTS Students;
+DROP TABLE IF EXISTS Admins;
 DROP TABLE IF EXISTS Teachers;
 SET FOREIGN_KEY_CHECKS = 1;
 
@@ -25,6 +27,26 @@ CREATE TABLE Students (
     name_myanmar VARCHAR(100) NOT NULL,
     email VARCHAR(100) NOT NULL,
     username VARCHAR(50) NOT NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE StudentAccounts (
+    student_id INT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_student_accounts_student
+        FOREIGN KEY (student_id) REFERENCES Students(student_id)
+        ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE Admins (
+    admin_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
 CREATE TABLE Courses (

@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { hashPassword, verifyPassword } = require('../utils/password');
 
 const generateSessionCode = () => Math.floor(100000 + Math.random() * 900000).toString();
 const semesterNames = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX'];
@@ -17,7 +18,7 @@ exports.signup = async (req, res) => {
   try {
     const [result] = await db.query(
       'INSERT INTO Teachers (name, email, password) VALUES (?, ?, ?)',
-      [name.trim(), normalizedEmail, password]
+      [name.trim(), normalizedEmail, await hashPassword(password)]
     );
     res.status(201).json({ success: true, teacher: { teacher_id: result.insertId, name: name.trim(), email: normalizedEmail } });
   } catch (err) {
@@ -30,9 +31,15 @@ exports.login = async (req, res) => {
   const { email, password } = req.body;
   const normalizedEmail = email?.trim().toLowerCase();
   try {
-    const [rows] = await db.query('SELECT teacher_id, name, email FROM Teachers WHERE email = ? AND password = ?', [normalizedEmail, password]);
-    if (rows.length === 0) return res.status(401).json({ success: false, message: 'Invalid email or password.' });
-    res.json({ success: true, teacher: rows[0] });
+    const [rows] = await db.query('SELECT teacher_id, name, email, password FROM Teachers WHERE email = ?', [normalizedEmail]);
+    if (rows.length === 0 || !(await verifyPassword(password, rows[0].password))) {
+      return res.status(401).json({ success: false, message: 'Invalid email or password.' });
+    }
+    const teacher = { teacher_id: rows[0].teacher_id, name: rows[0].name, email: rows[0].email };
+    if (!rows[0].password.startsWith('scrypt:')) {
+      await db.query('UPDATE Teachers SET password = ? WHERE teacher_id = ?', [await hashPassword(password), teacher.teacher_id]);
+    }
+    res.json({ success: true, teacher });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

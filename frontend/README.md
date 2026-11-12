@@ -71,7 +71,7 @@ mysql -u root -p < backend/database/schemaquery.sql
 
 Enter the MySQL password when prompted. This creates the `attendance_system` database, creates the required tables, and inserts sample students.
 
-**Warning:** The schema file deletes and recreates the application tables. Do not run it again if you need to preserve attendance data.
+**Warning:** The schema file deletes and recreates the application tables, including admin accounts. Do not run it again if you need to preserve attendance data.
 
 ## 6. Test the database connection
 
@@ -82,7 +82,18 @@ node config/test-db.js
 
 You should see `MySQL Database connected successfully!`.
 
-## 7. Start the backend server
+## 7. Create an admin account
+
+Create the first admin account after setting up the database:
+
+```bash
+cd backend
+npm run create-admin
+```
+
+Follow the prompts for the admin name, email, and password. Keep the credentials private. Admin accounts are not created through the sign-in page.
+
+## 8. Start the backend server
 
 Open Terminal 1 in the project root:
 
@@ -93,7 +104,7 @@ npm start
 
 The backend runs at `http://localhost:3000`. Keep this terminal running.
 
-## 8. Start the frontend
+## 9. Start the frontend
 
 Open Terminal 2 in the project root:
 
@@ -104,16 +115,17 @@ npm run dev
 
 Open the Vite URL shown in the terminal, normally `http://localhost:5173`.
 
-## 9. Use the system
+## 10. Use the system
 
-1. Choose **Lecturer Mode** and create an account.
-2. Create and select a course.
-3. Enroll students and open an attendance session.
-4. Give the six-digit code to students.
-5. Students use **Student Panel** to submit attendance.
-6. Return to Lecturer Mode to view the monthly attendance report.
+1. Sign in as **Admin** with the credentials created in step 7.
+2. Register students from the admin dashboard, then use the roster’s **Edit** and **Delete** actions to maintain their details. Deleting a student also permanently removes their enrollments and attendance records.
+3. Give the student their email, student code, and initial password privately.
+4. Students choose **Student**, then sign in with those details. They cannot create their own accounts.
+5. Choose **Teacher** to create an account, create and select a course, enroll students, and open an attendance session.
+6. Give the six-digit attendance code to students so they can submit attendance.
+7. Return to Teacher mode to view the monthly attendance report.
 
-## 10. Build the frontend
+## 11. Build the frontend
 
 ```bash
 cd frontend
