@@ -1,10 +1,98 @@
 const db = require('../config/db');
-const { verifyPassword } = require('../utils/password');
+const { hashPassword, verifyPassword } = require('../utils/password');
+const { createHash, timingSafeEqual } = require('crypto');
 
-exports.signup = (_req, res) => res.status(403).json({
-  success: false,
-  message: 'Student accounts are created by an administrator. Please contact your school admin.'
-});
+exports.signup = async (req, res) => {
+  const { student_code: studentCode, email, activation_code: activationCode, password } = req.body || {};
+  const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+  const normalizedCode = typeof studentCode === 'string'
+    ? studentCode.replace(/\s+/g, '').toUpperCase()
+    : '';
+  const normalizedActivationCode = typeof activationCode === 'string'
+    ? activationCode.trim().toLowerCase()
+    : '';
+
+  if (!normalizedCode || !normalizedEmail || !normalizedActivationCode
+      || typeof password !== 'string' || !password) {
+    return res.status(400).json({
+      success: false,
+      message: 'Student code, email, activation code, and password are required.'
+    });
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+    return res.status(400).json({ success: false, message: 'Enter a valid email address.' });
+  }
+  if (password.length < 6) {
+    return res.status(400).json({ success: false, message: 'Password must be at least 6 characters.' });
+  }
+  if (!/^[a-f0-9]{32}$/.test(normalizedActivationCode)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Student details or activation code are invalid or expired. Ask your admin for a new code.'
+    });
+  }
+
+  const activationHash = createHash('sha256').update(normalizedActivationCode).digest();
+  let connection;
+  try {
+    const hashedPassword = await hashPassword(password);
+    connection = await db.getConnection();
+    await connection.beginTransaction();
+    const [rows] = await connection.query(
+      `SELECT students.student_id, students.student_code, students.name_myanmar,
+              accounts.name, accounts.email, accounts.activation_code_hash
+       FROM Students students
+       JOIN StudentAccounts accounts ON accounts.student_id = students.student_id
+       WHERE students.student_code = ? AND students.email = ?
+         AND accounts.email = ? AND accounts.password IS NULL
+         AND accounts.activation_expires_at > NOW()
+       FOR UPDATE`,
+      [normalizedCode, normalizedEmail, normalizedEmail]
+    );
+    const account = rows[0];
+    if (!account || !account.activation_code_hash) {
+      await connection.rollback();
+      return res.status(400).json({
+        success: false,
+        message: 'Student details or activation code are invalid or expired. Ask your admin for a new code.'
+      });
+    }
+
+    const storedHash = Buffer.from(account.activation_code_hash, 'hex');
+    if (storedHash.length !== activationHash.length || !timingSafeEqual(storedHash, activationHash)) {
+      await connection.rollback();
+      return res.status(400).json({
+        success: false,
+        message: 'Student details or activation code are invalid or expired. Ask your admin for a new code.'
+      });
+    }
+
+    await connection.query(
+      `UPDATE StudentAccounts
+       SET password = ?, activated_at = NOW(),
+           activation_code_hash = NULL, activation_expires_at = NULL
+       WHERE student_id = ? AND password IS NULL`,
+      [hashedPassword, account.student_id]
+    );
+    await connection.commit();
+    res.status(201).json({
+      success: true,
+      message: 'Account activated. Sign in with your email and password.',
+      student: {
+        student_id: account.student_id,
+        student_code: account.student_code,
+        name: account.name || account.name_myanmar,
+        email: account.email
+      }
+    });
+  } catch (error) {
+    if (connection) await connection.rollback();
+    console.error('Student account activation failed:', error);
+    res.status(500).json({ success: false, message: 'Unable to activate the account right now.' });
+  } finally {
+    if (connection) connection.release();
+  }
+};
 
 exports.login = async (req, res) => {
   const { email, student_code, password } = req.body;

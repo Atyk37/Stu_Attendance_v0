@@ -31,6 +31,7 @@ const getSemestersForYear = (year) => {
 export default function LecturerPanel({ teacher }) {
   const [classList, setClassList] = useState([]);
   const [selectedClassId, setSelectedClassId] = useState('');
+  const selectedClass = classList.find((course) => String(course.class_id) === selectedClassId) || null;
   const [activeSession, setActiveSession] = useState(() => {
     try {
       const savedSession = JSON.parse(localStorage.getItem('attendance_active_session'));
@@ -327,7 +328,7 @@ export default function LecturerPanel({ teacher }) {
         </div>
       )}
 
-      <StudentEnrollmentManager teacher={teacher} selectedClassId={selectedClassId} />
+      <StudentEnrollmentManager teacher={teacher} selectedClassId={selectedClassId} selectedClass={selectedClass} />
       <MonthlyAttendance teacher={teacher} selectedClassId={selectedClassId} />
     </div>
   );

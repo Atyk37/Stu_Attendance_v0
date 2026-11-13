@@ -26,9 +26,9 @@ function readStoredUser() {
 function LoginPage({ onAuthenticated }) {
   const [role, setRole] = useState('student');
   const [mode, setMode] = useState('login');
-  const [form, setForm] = useState({ name: '', email: '', student_code: '', password: '' });
+  const [form, setForm] = useState({ name: '', email: '', student_code: '', activation_code: '', password: '' });
   const [feedback, setFeedback] = useState(null);
-  const isSignup = mode === 'signup' && role === 'teacher';
+  const isSignup = mode === 'signup' && (role === 'teacher' || role === 'student');
 
   const handleRoleChange = (event) => {
     const nextRole = event.target.value;
@@ -58,8 +58,13 @@ function LoginPage({ onAuthenticated }) {
 
       if (isSignup) {
         setMode('login');
-        setForm({ ...form, name: '', password: '' });
-        setFeedback({ success: true, message: 'Account created. Sign in to continue.' });
+        setForm({ ...form, name: '', activation_code: '', password: '' });
+        setFeedback({
+          success: true,
+          message: role === 'student'
+            ? 'Account activated. Sign in to continue.'
+            : 'Account created. Sign in to continue.'
+        });
         return;
       }
 
@@ -74,8 +79,14 @@ function LoginPage({ onAuthenticated }) {
 
   return (
     <section className="mx-auto w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h3 className="text-2xl font-bold text-slate-800">{isSignup ? 'Create your account' : 'Sign in'}</h3>
-      <p className="mt-2 text-sm text-slate-600">Use your account details to open your attendance portal.</p>
+      <h3 className="text-2xl font-bold text-slate-800">
+        {isSignup && role === 'student' ? 'Activate your account' : isSignup ? 'Create your account' : 'Sign in'}
+      </h3>
+      <p className="mt-2 text-sm text-slate-600">
+        {isSignup && role === 'student'
+          ? 'Enter the details and one-time code provided by your school admin, then choose a password.'
+          : 'Use your account details to open your attendance portal.'}
+      </p>
       <form onSubmit={handleSubmit} className="mt-5 flex flex-col gap-3">
         <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
           Role
@@ -90,7 +101,7 @@ function LoginPage({ onAuthenticated }) {
           </select>
         </label>
 
-        {isSignup && (
+        {isSignup && role === 'teacher' && (
           <input
             type="text"
             placeholder="Full name"
@@ -127,6 +138,19 @@ function LoginPage({ onAuthenticated }) {
           />
         )}
 
+        {isSignup && role === 'student' && (
+          <input
+            type="text"
+            placeholder="One-time activation code"
+            aria-label="One-time activation code"
+            autoComplete="off"
+            value={form.activation_code}
+            onChange={(event) => setForm({ ...form, activation_code: event.target.value })}
+            required
+            className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          />
+        )}
+
         <input
           type="password"
           placeholder="Password (at least 6 characters)"
@@ -143,7 +167,7 @@ function LoginPage({ onAuthenticated }) {
           type="submit"
           className="mt-1 rounded-xl bg-blue-700 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800"
         >
-          {isSignup ? 'Create Account' : 'Log In'}
+          {isSignup && role === 'student' ? 'Activate Account' : isSignup ? 'Create Account' : 'Log In'}
         </button>
       </form>
 
@@ -153,7 +177,7 @@ function LoginPage({ onAuthenticated }) {
         </p>
       )}
 
-      {role === 'teacher' && (
+      {(role === 'teacher' || role === 'student') && (
         <button
           type="button"
           onClick={() => {
@@ -162,11 +186,17 @@ function LoginPage({ onAuthenticated }) {
           }}
           className="mt-4 text-sm font-medium text-blue-700 underline-offset-2 hover:underline"
         >
-          {isSignup ? 'Already have an account? Sign in' : 'Need an account? Sign up'}
+          {isSignup
+            ? 'Already have an account? Sign in'
+            : role === 'student' ? 'Have an activation code? Activate your account' : 'Need an account? Sign up'}
         </button>
       )}
       {role === 'student' && (
-        <p className="mt-4 text-sm text-slate-500">Student accounts are created by an administrator. Contact your school admin for login details.</p>
+        <p className="mt-4 text-sm text-slate-500">
+          {isSignup
+            ? 'No activation code? Contact your school admin.'
+            : 'Your school admin must add you and give you an activation code before you can sign in.'}
+        </p>
       )}
       {role === 'admin' && (
         <p className="mt-4 text-sm text-slate-500">Admin accounts are created by an authorized operator.</p>

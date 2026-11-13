@@ -26,14 +26,19 @@ CREATE TABLE Students (
     student_code VARCHAR(30) UNIQUE NOT NULL,
     name_myanmar VARCHAR(100) NOT NULL,
     email VARCHAR(100) NOT NULL,
-    username VARCHAR(50) NOT NULL
+    username VARCHAR(50) NOT NULL,
+    academic_year VARCHAR(20) NULL,
+    semester VARCHAR(30) NULL
 ) ENGINE=InnoDB;
 
 CREATE TABLE StudentAccounts (
     student_id INT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     email VARCHAR(100) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL,
+    password VARCHAR(255) NULL,
+    activation_code_hash CHAR(64) NULL,
+    activation_expires_at DATETIME NULL,
+    activated_at DATETIME NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_student_accounts_student

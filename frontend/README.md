@@ -73,6 +73,22 @@ Enter the MySQL password when prompted. This creates the `attendance_system` dat
 
 **Warning:** The schema file deletes and recreates the application tables, including admin accounts. Do not run it again if you need to preserve attendance data.
 
+For an existing database, do not rerun the schema because it drops existing tables and data. Back up the database, then apply the missing columns once in MySQL:
+
+```sql
+ALTER TABLE Students
+    ADD COLUMN academic_year VARCHAR(20) NULL,
+    ADD COLUMN semester VARCHAR(30) NULL;
+
+ALTER TABLE StudentAccounts
+    MODIFY COLUMN password VARCHAR(255) NULL,
+    ADD COLUMN activation_code_hash CHAR(64) NULL,
+    ADD COLUMN activation_expires_at DATETIME NULL,
+    ADD COLUMN activated_at DATETIME NULL;
+```
+
+Existing student rows remain unassigned until an admin sets their study year and semester in the student editor.
+
 ## 6. Test the database connection
 
 ```bash
@@ -118,12 +134,13 @@ Open the Vite URL shown in the terminal, normally `http://localhost:5173`.
 ## 10. Use the system
 
 1. Sign in as **Admin** with the credentials created in step 7.
-2. Register students from the admin dashboard, then use the roster’s **Edit** and **Delete** actions to maintain their details. Deleting a student also permanently removes their enrollments and attendance records.
-3. Give the student their email, student code, and initial password privately.
-4. Students choose **Student**, then sign in with those details. They cannot create their own accounts.
-5. Choose **Teacher** to create an account, create and select a course, enroll students, and open an attendance session.
-6. Give the six-digit attendance code to students so they can submit attendance.
-7. Return to Teacher mode to view the monthly attendance report.
+2. Register students from the admin dashboard and assign their study year and semester. Use the roster’s **Edit** and **Delete** actions to maintain their details. Deleting a student also permanently removes their enrollments and attendance records.
+3. At semester end, filter the cohort by study year and semester in **Advance a student cohort** and advance all matching students together. Their previous class and attendance records remain unchanged.
+4. Give the student their email, student code, and initial password privately.
+5. Students choose **Student**, then sign in with those details. They cannot create their own accounts.
+6. Choose **Teacher** to create an account, create and select a course, add all roster students matching that course’s study year and semester (or add one matching student by code), and open an attendance session.
+7. Give the six-digit attendance code to students so they can submit attendance.
+8. Return to Teacher mode to view the monthly attendance report.
 
 ## 11. Build the frontend
 

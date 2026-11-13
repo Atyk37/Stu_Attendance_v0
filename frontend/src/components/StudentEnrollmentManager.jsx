@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { API_BASE_URL } from '../api';
 
-export default function StudentEnrollmentManager({ teacher, selectedClassId }) {
+export default function StudentEnrollmentManager({ teacher, selectedClassId, selectedClass }) {
   const [students, setStudents] = useState([]);
-  const [mode, setMode] = useState('enroll');
-  const [newStudent, setNewStudent] = useState({ student_code: '', name_myanmar: '', email: '', username: '' });
+  const [studentCode, setStudentCode] = useState('');
   const [feedback, setFeedback] = useState(null);
-  const [loading, setLoading] = useState(false);  
+  const [loading, setLoading] = useState(false);
+  const [addingCohort, setAddingCohort] = useState(false);
   const [showStudents, setShowStudents] = useState(false);
 
   useEffect(() => {
@@ -43,22 +43,56 @@ export default function StudentEnrollmentManager({ teacher, selectedClassId }) {
     event.preventDefault();
     setFeedback(null);
     try {
-      const isNewStudent = mode === 'register';
-      const endpoint = isNewStudent ? 'register' : '';
-      const response = await fetch(`${API_BASE_URL}/api/lecturer/classes/${selectedClassId}/students${endpoint ? `/${endpoint}` : ''}`, {
+      const response = await fetch(`${API_BASE_URL}/api/lecturer/classes/${selectedClassId}/students`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(isNewStudent
-          ? { teacher_id: teacher.teacher_id, ...newStudent }
-          : { teacher_id: teacher.teacher_id, student_code: newStudent.student_code })
+        body: JSON.stringify({ teacher_id: teacher.teacher_id, student_code: studentCode })
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || (isNewStudent ? 'Unable to register student.' : 'Unable to enroll student.'));
+      if (!response.ok) throw new Error(data.error || 'Unable to add student to this course.');
       setStudents((currentStudents) => [...currentStudents, data.student].sort((a, b) => a.student_code.localeCompare(b.student_code)));
-      setNewStudent({ student_code: '', name_myanmar: '', email: '', username: '' });
-      setFeedback({ success: true, message: isNewStudent ? `${data.student.student_code} was registered and added.` : `${data.student.student_code} was added to this course.` });
+      setStudentCode('');
+      setFeedback({ success: true, message: `${data.student.student_code} was added to this course.` });
     } catch (error) {
       setFeedback({ success: false, message: error.message });
+    }
+  };
+
+  const handleAddCohort = async () => {
+    if (!selectedClass?.academic_year || !selectedClass?.semester) {
+      setFeedback({ success: false, message: 'The selected course has no study year or semester.' });
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Add all students assigned to ${selectedClass.academic_year}, ${selectedClass.semester} to ${selectedClass.course_code}? Students already enrolled will be skipped.`
+    );
+    if (!confirmed) return;
+
+    setAddingCohort(true);
+    setFeedback(null);
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/lecturer/classes/${selectedClassId}/students/enroll-cohort`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ teacher_id: teacher.teacher_id })
+        }
+      );
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Unable to add matching students.');
+      if (!Array.isArray(data.students)) throw new Error('The server returned an invalid student list.');
+
+      setStudents((currentStudents) =>
+        [...currentStudents, ...data.students]
+          .sort((a, b) => a.student_code.localeCompare(b.student_code))
+      );
+      setFeedback({ success: true, message: data.message });
+    } catch (error) {
+      setFeedback({ success: false, message: error.message });
+    } finally {
+      setAddingCohort(false);
     }
   };
 
@@ -66,73 +100,37 @@ export default function StudentEnrollmentManager({ teacher, selectedClassId }) {
 
   return (
     <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <h3 className="mt-0 text-xl font-bold text-slate-800">
-        {mode === 'enroll' ? 'Add Existing Student' : 'Register New Student'}
-      </h3>
+      <h3 className="mt-0 text-xl font-bold text-slate-800">Add Students to the Course</h3>
       <p className="mt-0 text-sm text-slate-600">
-        {mode === 'enroll' ? 'Enter the student code of an existing student account.' : 'Create a student account and add it to this course.'}
+        This course is for {selectedClass?.academic_year || 'an unassigned year'}, {selectedClass?.semester || 'an unassigned semester'}.
+        Add all students in this cohort, or enter one student code below.
       </p>
 
-      <div className="mb-3 flex gap-2">
-        <button
-          type="button"
-          onClick={() => { setMode('enroll'); setFeedback(null); }}
-          className={`rounded-lg px-3 py-2 text-sm font-semibold ${mode === 'enroll' ? 'bg-blue-700 text-white' : 'bg-slate-200 text-slate-700'}`}
-        >
-          Existing Student
-        </button>
-        <button
-          type="button"
-          onClick={() => { setMode('register'); setFeedback(null); }}
-          className={`rounded-lg px-3 py-2 text-sm font-semibold ${mode === 'register' ? 'bg-blue-700 text-white' : 'bg-slate-200 text-slate-700'}`}
-        >
-          New Student
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={handleAddCohort}
+        disabled={addingCohort || !selectedClass?.academic_year || !selectedClass?.semester}
+        className="mb-4 w-full rounded-xl bg-blue-700 px-4 py-3 text-sm font-bold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {addingCohort ? 'Adding cohort…' : `Add all ${selectedClass?.academic_year || ''} ${selectedClass?.semester || ''} students`}
+      </button>
 
       <form onSubmit={handleStudentSubmit} className="grid gap-3 md:grid-cols-2">
         <input
           type="text"
-          value={newStudent.student_code}
-          onChange={(event) => setNewStudent({ ...newStudent, student_code: event.target.value })}
+          value={studentCode}
+          onChange={(event) => setStudentCode(event.target.value)}
           placeholder="Student code"
           aria-label="Student code"
           className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 md:col-span-2"
           required
         />
-        {mode === 'register' && (
-          <>
-            <input
-              type="text"
-              value={newStudent.name_myanmar}
-              onChange={(event) => setNewStudent({ ...newStudent, name_myanmar: event.target.value })}
-              placeholder="Student name"
-              className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-              required
-            />
-            <input
-              type="email"
-              value={newStudent.email}
-              onChange={(event) => setNewStudent({ ...newStudent, email: event.target.value })}
-              placeholder="Student email"
-              className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-              required
-            />
-            <input
-              type="text"
-              value={newStudent.username}
-              onChange={(event) => setNewStudent({ ...newStudent, username: event.target.value })}
-              placeholder="Student username"
-              className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 md:col-span-2"
-              required
-            />
-          </>
-        )}
         <button
           type="submit"
-          className="rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-emerald-700 md:col-span-2"
+          disabled={addingCohort}
+          className="rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50 md:col-span-2"
         >
-          {mode === 'enroll' ? 'Add Existing Student to Course' : 'Register and Add Student'}
+          Add Student to Course
         </button>
       </form>
 
@@ -187,7 +185,8 @@ export default function StudentEnrollmentManager({ teacher, selectedClassId }) {
                     <button
                       type="button"
                       onClick={() => handleRemoveStudent(student)}
-                      className="rounded-lg bg-red-600 px-2.5 py-1.5 text-xs font-bold text-white transition hover:bg-red-700"
+                      disabled={addingCohort}
+                      className="rounded-lg bg-red-600 px-2.5 py-1.5 text-xs font-bold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       Remove
                     </button>

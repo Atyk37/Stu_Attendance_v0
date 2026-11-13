@@ -223,18 +223,135 @@ exports.getClassStudents = async (req, res) => {
 };
 
 exports.addStudentToClass = async (req, res) => {
-  const { teacher_id, student_code } = req.body;
-  const normalizedStudentCode = student_code?.replace(/\s+/g, '').toUpperCase();
+  const { teacher_id: teacherId, student_code: studentCode } = req.body || {};
+  const normalizedStudentCode = typeof studentCode === 'string'
+    ? studentCode.replace(/\s+/g, '').toUpperCase()
+    : '';
+  if (!teacherId || !normalizedStudentCode) {
+    return res.status(400).json({ error: 'Teacher and student code are required.' });
+  }
+
   try {
-    const [ownedClasses] = await db.query('SELECT class_id FROM Classes WHERE class_id = ? AND teacher_id = ?', [req.params.classId, teacher_id]);
+    const [ownedClasses] = await db.query(
+      'SELECT class_id, academic_year, semester FROM Classes WHERE class_id = ? AND teacher_id = ?',
+      [req.params.classId, teacherId]
+    );
     if (ownedClasses.length === 0) return res.status(403).json({ error: 'You can only manage students in your own classes.' });
-    const [students] = await db.query('SELECT student_id, student_code, name_myanmar, email, username FROM Students WHERE student_code = ?', [normalizedStudentCode]);
+    const [students] = await db.query(
+      `SELECT student_id, student_code, name_myanmar, email, username, academic_year, semester
+       FROM Students
+       WHERE student_code = ?`,
+      [normalizedStudentCode]
+    );
     if (students.length === 0) return res.status(404).json({ error: 'Student code not found.' });
-    await db.query('INSERT INTO Enrollments (student_id, class_id) VALUES (?, ?)', [students[0].student_id, req.params.classId]);
-    res.status(201).json({ success: true, student: students[0] });
+    const student = students[0];
+    const course = ownedClasses[0];
+    if (student.academic_year !== course.academic_year || student.semester !== course.semester) {
+      return res.status(409).json({
+        error: `Student is assigned to ${student.academic_year || 'an unassigned year'}, ${student.semester || 'an unassigned semester'} and cannot be added to this course.`
+      });
+    }
+    await db.query(
+      'INSERT INTO Enrollments (student_id, class_id) VALUES (?, ?)',
+      [student.student_id, req.params.classId]
+    );
+    res.status(201).json({
+      success: true,
+      student: {
+        student_id: student.student_id,
+        student_code: student.student_code,
+        name_myanmar: student.name_myanmar,
+        email: student.email,
+        username: student.username
+      }
+    });
   } catch (err) {
     if (err.code === 'ER_DUP_ENTRY') return res.status(409).json({ error: 'Student is already enrolled in this course.' });
     res.status(500).json({ error: err.message });
+  }
+};
+
+exports.addCohortToClass = async (req, res) => {
+  const { teacher_id: teacherId } = req.body || {};
+  if (!teacherId) return res.status(400).json({ error: 'Teacher identity is required.' });
+
+  let connection;
+  try {
+    connection = await db.getConnection();
+    await connection.beginTransaction();
+    const [ownedClasses] = await connection.query(
+      `SELECT class_id, academic_year, semester
+       FROM Classes
+       WHERE class_id = ? AND teacher_id = ?
+       FOR UPDATE`,
+      [req.params.classId, teacherId]
+    );
+    if (ownedClasses.length === 0) {
+      await connection.rollback();
+      return res.status(403).json({ error: 'You can only manage students in your own classes.' });
+    }
+
+    const course = ownedClasses[0];
+    const [cohortStudents] = await connection.query(
+      `SELECT students.student_id, students.student_code, students.name_myanmar,
+              students.email, students.username
+       FROM Students students
+       WHERE students.academic_year = ? AND students.semester = ?
+       ORDER BY students.student_code
+       FOR UPDATE`,
+      [course.academic_year, course.semester]
+    );
+    let alreadyEnrolledIds = new Set();
+    if (cohortStudents.length > 0) {
+      const studentPlaceholders = cohortStudents.map(() => '?').join(', ');
+      const [enrollments] = await connection.query(
+        `SELECT student_id
+         FROM Enrollments
+         WHERE class_id = ? AND student_id IN (${studentPlaceholders})`,
+        [course.class_id, ...cohortStudents.map((student) => student.student_id)]
+      );
+      alreadyEnrolledIds = new Set(enrollments.map((enrollment) => enrollment.student_id));
+    }
+    const studentsToAdd = cohortStudents.filter((student) => !alreadyEnrolledIds.has(student.student_id));
+
+    if (studentsToAdd.length > 0) {
+      const placeholders = studentsToAdd.map(() => '(?, ?)').join(', ');
+      const values = studentsToAdd.flatMap((student) => [student.student_id, course.class_id]);
+      await connection.query(
+        `INSERT INTO Enrollments (student_id, class_id) VALUES ${placeholders}`,
+        values
+      );
+    }
+
+    await connection.commit();
+    const alreadyEnrolled = cohortStudents.length - studentsToAdd.length;
+    res.json({
+      success: true,
+      message: cohortStudents.length === 0
+        ? `No students are assigned to ${course.academic_year}, ${course.semester}.`
+        : studentsToAdd.length === 0
+          ? 'All matching students are already enrolled in this course.'
+          : `${studentsToAdd.length} student${studentsToAdd.length === 1 ? '' : 's'} added; ${alreadyEnrolled} already enrolled.`,
+      matched_count: cohortStudents.length,
+      added_count: studentsToAdd.length,
+      already_enrolled_count: alreadyEnrolled,
+      students: studentsToAdd.map(({ student_id, student_code, name_myanmar, email, username }) => ({
+        student_id,
+        student_code,
+        name_myanmar,
+        email,
+        username
+      }))
+    });
+  } catch (err) {
+    if (connection) await connection.rollback();
+    console.error('Unable to add student cohort to class:', err);
+    if (err.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ error: 'Some matching students were enrolled at the same time. Refresh the roster and try again.' });
+    }
+    res.status(500).json({ error: 'Unable to add matching students to this course right now.' });
+  } finally {
+    if (connection) connection.release();
   }
 };
 
@@ -323,38 +440,5 @@ exports.getMonthlyAttendance = async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
-  }
-};
-
-exports.registerStudentToClass = async (req, res) => {
-  const { teacher_id, student_code, name_myanmar, email, username } = req.body;
-  if (!teacher_id || !student_code?.trim() || !name_myanmar?.trim() || !email?.trim() || !username?.trim()) {
-    return res.status(400).json({ error: 'Student code, name, email, and username are required.' });
-  }
-
-  const connection = await db.getConnection();
-  try {
-    await connection.beginTransaction();
-    const [ownedClasses] = await connection.query('SELECT class_id FROM Classes WHERE class_id = ? AND teacher_id = ?', [req.params.classId, teacher_id]);
-    if (ownedClasses.length === 0) {
-      await connection.rollback();
-      return res.status(403).json({ error: 'You can only manage students in your own classes.' });
-    }
-    const [studentResult] = await connection.query(
-      'INSERT INTO Students (student_code, name_myanmar, email, username) VALUES (?, ?, ?, ?)',
-      [student_code.replace(/\s+/g, '').toUpperCase(), name_myanmar.trim(), email.trim().toLowerCase(), username.trim()]
-    );
-    await connection.query('INSERT INTO Enrollments (student_id, class_id) VALUES (?, ?)', [studentResult.insertId, req.params.classId]);
-    await connection.commit();
-    res.status(201).json({
-      success: true,
-      student: { student_id: studentResult.insertId, student_code: student_code.replace(/\s+/g, '').toUpperCase(), name_myanmar: name_myanmar.trim(), email: email.trim().toLowerCase(), username: username.trim() }
-    });
-  } catch (err) {
-    await connection.rollback();
-    if (err.code === 'ER_DUP_ENTRY') return res.status(409).json({ error: 'Student code already exists or is already enrolled.' });
-    res.status(500).json({ error: err.message });
-  } finally {
-    connection.release();
   }
 };
